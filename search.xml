@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search>
+  <entry>
+    <title>goroutine相关研究</title>
+    <url>/2021/05/19/goroutine%E7%9B%B8%E5%85%B3%E7%A0%94%E7%A9%B6/</url>
+    <content><![CDATA[<p>goroutine 相关 研究</p>
+<span id="more"></span>
+<h1 id="面试题"><a href="#面试题" class="headerlink" title="面试题"></a>面试题</h1><h2 id="双协程交替打印1-10"><a href="#双协程交替打印1-10" class="headerlink" title="双协程交替打印1-10"></a>双协程交替打印1-10</h2><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 双协程交替打印1-10</span></span><br><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> <span class="string">&quot;fmt&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	a := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">int</span>)</span><br><span class="line">	exit := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">bool</span>)</span><br><span class="line">	<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">		<span class="keyword">for</span> i := <span class="number">2</span>; i &lt;= <span class="number">10</span>; i += <span class="number">2</span> &#123;</span><br><span class="line">			fmt.Println(<span class="string">&quot;A:&quot;</span>, &lt;-a) <span class="comment">//等待打印</span></span><br><span class="line">			a &lt;- i                 <span class="comment">//传入，下面的协程接受</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;()</span><br><span class="line">	<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">		<span class="keyword">defer</span> <span class="built_in">close</span>(exit)</span><br><span class="line">		<span class="keyword">for</span> i := <span class="number">1</span>; i &lt;= <span class="number">9</span>; i += <span class="number">2</span> &#123;</span><br><span class="line">			a &lt;- i                 <span class="comment">//传入，上面的协程接受</span></span><br><span class="line">			fmt.Println(<span class="string">&quot;B:&quot;</span>, &lt;-a) <span class="comment">//等待打印</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;()</span><br><span class="line">	&lt;-exit</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>]]></content>
+      <categories>
+        <category>golang</category>
+      </categories>
+      <tags>
+        <tag>goroutine</tag>
+        <tag>面试题</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>动态规划算法思路</title>
+    <url>/2021/05/16/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92%E7%AE%97%E6%B3%95%E6%80%9D%E8%B7%AF/</url>
+    <content><![CDATA[<p>在这片文章中，我们总结了动态规划的基本思路，大致就分为三种</p>
+<span id="more"></span>
+
+<p>此文章整理自<code>CyC</code>大佬，github地址：</p>
+<p><a href="https://github.com/CyC2018/CS-Notes/blob/master/notes/Leetcode%20%E9%A2%98%E8%A7%A3%20-%20%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92.md#leetcode-%E9%A2%98%E8%A7%A3---%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92">https://github.com/CyC2018/CS-Notes/blob/master/notes/Leetcode%20%E9%A2%98%E8%A7%A3%20-%20%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92.md#leetcode-%E9%A2%98%E8%A7%A3---%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92</a></p>
+<h1 id="常见的背包问题"><a href="#常见的背包问题" class="headerlink" title="常见的背包问题"></a>常见的背包问题</h1><ul>
+<li>组合问题</li>
+<li>True、False问题</li>
+<li>最大最小问题</li>
+</ul>
+<h2 id="组合问题"><a href="#组合问题" class="headerlink" title="组合问题"></a>组合问题</h2><p><a href="https://leetcode-cn.com/problems/combination-sum-iv/description/" title="377. 组合总和 Ⅳ">377. 组合总和 Ⅳ</a></p>
+<p><a href="https://leetcode-cn.com/problems/target-sum/description/" title="494. 目标和">494. 目标和</a></p>
+<p><a href="https://leetcode-cn.com/problems/coin-change-2/description/" title="518. 零钱兑换 II">518. 零钱兑换 II</a></p>
+<h2 id="True、False问题"><a href="#True、False问题" class="headerlink" title="True、False问题"></a>True、False问题</h2><p><a href="https://leetcode-cn.com/problems/word-break/" title="139. 单词拆分">139. 单词拆分</a></p>
+<p><a href="https://leetcode-cn.com/problems/partition-equal-subset-sum/description/" title="416. 分割等和子集">416. 分割等和子集</a></p>
+<h2 id="最大最小问题"><a href="#最大最小问题" class="headerlink" title="最大最小问题"></a>最大最小问题</h2><p><a href="https://leetcode-cn.com/problems/ones-and-zeroes/description/" title="474. 一和零">474. 一和零</a></p>
+<p><a href="https://leetcode-cn.com/problems/coin-change/description/" title="322. 零钱兑换">322. 零钱兑换</a></p>
+<h1 id="公式"><a href="#公式" class="headerlink" title="公式"></a>公式</h1><h2 id="组合问题公式"><a href="#组合问题公式" class="headerlink" title="组合问题公式"></a>组合问题公式</h2><pre><code>dp[i] += dp[i-num]
+</code></pre>
+<h2 id="True、False问题公式"><a href="#True、False问题公式" class="headerlink" title="True、False问题公式"></a>True、False问题公式</h2><pre><code>dp[i] = dp[i] or dp[i-num]
+</code></pre>
+<h2 id="最大最小问题公式"><a href="#最大最小问题公式" class="headerlink" title="最大最小问题公式"></a>最大最小问题公式</h2><pre><code>dp[i] = min(dp[i], dp[i-num]+1)或者dp[i] = max(dp[i], dp[i-num]+1)
+</code></pre>
+<p>以上三组公式是解决对应问题的核心公式。</p>
+<h1 id="解题步骤"><a href="#解题步骤" class="headerlink" title="解题步骤"></a>解题步骤</h1><p>当然拿到问题后，需要做到以下几个步骤：</p>
+<ol>
+<li>分析是否为背包问题。</li>
+<li>是以上三种背包问题中的哪一种。</li>
+<li>是0-1背包问题还是完全背包问题。也就是题目给的nums数组中的元素是否可以重复使用。</li>
+<li>如果是<strong>组合问题</strong>，<strong>是否需要考虑元素之间的顺序</strong>。需要考虑顺序有顺序的解法，不需要考虑顺序又有对应的解法。</li>
+</ol>
+<h2 id="背包问题特征"><a href="#背包问题特征" class="headerlink" title="背包问题特征"></a>背包问题特征</h2><p>给定一个<code>target</code>，<code>target</code>可以是数字也可以是字符串，再给定一个数组<code>nums</code>，<code>nums</code>中装的可能是数字，也可能是字符串，<strong>问</strong>：能否使用<code>nums</code>中的元素做各种排列组合得到<code>target</code>。</p>
+<h1 id="背包问题技巧"><a href="#背包问题技巧" class="headerlink" title="背包问题技巧"></a>背包问题技巧</h1><p>如果是<strong>0-1背包</strong>，即数组中的<strong>元素不可重复使用</strong>，<strong>nums放在外循环</strong>，<strong>target在内循环</strong>，且<strong>内循环倒序</strong>；</p>
+<pre><code>for num in nums:
+    for i in range(target, nums-1, -1):
+</code></pre>
+<p>如果是<strong>完全背包</strong>，即数组中的<strong>元素可重复使用</strong>，<strong>nums放在外循环</strong>，<strong>target在内循环</strong>。且<strong>内循环正序</strong>。</p>
+<pre><code>for num in nums:
+    for i in range(nums, target+1):
+</code></pre>
+<p>如果组合问题需<strong>考虑元素之间的顺序</strong>，需将<strong>target放在外循环</strong>，将<strong>nums放在内循环</strong>。</p>
+<pre><code>for i in range(1, target+1):
+    for num in nums:
+</code></pre>
+]]></content>
+      <categories>
+        <category>算法</category>
+      </categories>
+      <tags>
+        <tag>思路</tag>
+        <tag>动态规划</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>文件描述符/文件表项</title>
+    <url>/2021/05/18/%E6%96%87%E4%BB%B6%E6%8F%8F%E8%BF%B0%E7%AC%A6-%E6%96%87%E4%BB%B6%E8%A1%A8%E9%A1%B9/</url>
+    <content><![CDATA[<p>从Linux的层次角度来说，在用户空间是存在这样的概念的，这个概念是存在内核空间的，而且是针对打开的文件的！</p>
+<span id="more"></span>
+
+<h1 id="进程表"><a href="#进程表" class="headerlink" title="进程表"></a>进程表</h1><p>也称进程控制块PCB，由结构<code>task_struct</code>所定义的数据结构。<code>task_struct</code>结构体专门用于存放进程在运行过程中，所涉及到的所有与进程相关的信息。这个结构体的成员项非常多，多达近300个。其中，文件描述符表就被包含在了<code>task_struct</code>结构体当中。在进程运行结束后，进程表所占用的内存空间，会被释放。</p>
+<p>打开一个文件的内核数据结构图</p>
+<p><img src="/2021/05/18/%E6%96%87%E4%BB%B6%E6%8F%8F%E8%BF%B0%E7%AC%A6-%E6%96%87%E4%BB%B6%E8%A1%A8%E9%A1%B9/%E8%BF%9B%E7%A8%8B%E8%A1%A8.jpg" alt="关系图"></p>
+<h1 id="三种数据结构"><a href="#三种数据结构" class="headerlink" title="三种数据结构"></a>三种数据结构</h1><blockquote>
+<p>从Linux的层次角度来说，在用户空间是存在这样的概念的，这个概念是存在内核空间的，而且是针对打开的文件的！<br>内核用三种数据结构来描述一个打开的文件。</p>
+</blockquote>
+<h2 id="文件描述符表："><a href="#文件描述符表：" class="headerlink" title="文件描述符表："></a>文件描述符表：</h2><p><code>open</code>打开文件后，会在进程的<code>task_struct</code>结构体中，创建相应的结构体，用以存放打开文件的相关信息。对文件进行读写等操作时，会用到这些信息，这个数据结构就是我们要讲的<code>文件描述符表</code>。<br>每个进程都有它独立的描述符表，它的表项是由进程打开的文件描述符来索引的。每个打开的文件描述符表项指向<code>文件表</code>中的一个表项。</p>
+<h2 id="文件表"><a href="#文件表" class="headerlink" title="文件表"></a>文件表</h2><p>所有”打开的文件”的集合!<br>每个磁盘文件在打开时都会在内核中建立一个<strong>文件表项</strong>，内核为所有打开文件维持一张文件表。<br>每个<strong>文件表项</strong>包括：</p>
+<ul>
+<li>文件状态标志：读、写、添写、同步、非阻塞等</li>
+<li>当前文件偏移量</li>
+<li>指向该文件v节点表项的指针</li>
+</ul>
+<h3 id="文件状态标志"><a href="#文件状态标志" class="headerlink" title="文件状态标志"></a>文件状态标志</h3><p>文件状态标志就是open文件时指定的<code>O_RDONLY</code>、<code>O_WRONLY</code>、<code>O_RDWR</code>等操作权限。open打开文件成功后，就会将文件状态标志保存到文件表中。在对文件执行操作时，会先检查文件状态标志，看看有没有操作权限，然后再去操作文件。</p>
+<h3 id="文件偏移量"><a href="#文件偏移量" class="headerlink" title="文件偏移量"></a>文件偏移量</h3><p>文件当前读写位置与文件开始位置的距离（字节数）。</p>
+<h3 id="函数指针"><a href="#函数指针" class="headerlink" title="函数指针"></a>函数指针</h3><p>在<code>read</code>、<code>write</code>等操作文件时，会根据底层具体情况的不同，调用不同的函数来实现读写。在V节点里面保存了这些不同函数的函数指针，方便调用。</p>
+<h2 id="v-node"><a href="#v-node" class="headerlink" title="v-node"></a>v-node</h2><p><code>v-node</code> 在(<code>v-node table</code>) 。同文件表一样，所有的进程共享这张<code>v-node表</code>。<br>每个打开文件(或设备)都有个v节点结构。<br>v节点包含：</p>
+<ul>
+<li>文件类型</li>
+<li>对此文件进行各种操作的函数指针。 </li>
+</ul>
+<p>对于大多数文件，v节点还包含了该文件的i节点（索引节点）。</p>
+<p>i节点包含：</p>
+<ul>
+<li>文件的所有者</li>
+<li>文件长度</li>
+<li>文件所在设备</li>
+<li>指向文件实际在磁盘上所在位置的指针。</li>
+</ul>
+<h3 id="文件长度"><a href="#文件长度" class="headerlink" title="文件长度"></a>文件长度</h3><p>记录了文件当前的长度，文件长度是动态更新的。</p>
+<p><strong>注</strong>：</p>
+<ol>
+<li>在文件表或者v索引节点中都有索引计数 (即当前指向该表项的描述符表项数)，引用计数为0的时候就可以收回此表项</li>
+<li>fork后父子进程各自的每一个打开的文件描述符共享同一个文件表项</li>
+</ol>
+<p>参考地址：<br><a href="http://emb.hqyj.com/Column/4458.html">什么是＂文件表项＂</a><br><a href="https://zhuanlan.zhihu.com/p/56251739">进程表和文件描述表</a><br><a href="https://www.cnblogs.com/tianzeng/p/11037229.html">文件描述符标志/文件表项</a></p>
+]]></content>
+      <categories>
+        <category>操作系统</category>
+      </categories>
+      <tags>
+        <tag>文件描述符</tag>
+        <tag>文件表项</tag>
+        <tag>linux</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>I/O多路复用理解</title>
+    <url>/2021/05/12/I-O%E5%A4%9A%E8%B7%AF%E5%A4%8D%E7%94%A8%E7%90%86%E8%A7%A3/</url>
+    <content><![CDATA[<p>这篇文章我们将详细说明I/O多路复用的内容</p>
+<span id="more"></span>
+
+<blockquote>
+<p>在了解I/O多路复用前，我们首先要了解 </p>
+<ul>
+<li>进程、线程</li>
+<li>同步、异步</li>
+<li>阻塞、非阻塞 </li>
+<li>文件描述符</li>
+</ul>
+</blockquote>
+<h1 id="进程、线程"><a href="#进程、线程" class="headerlink" title="进程、线程"></a>进程、线程</h1><p><strong>进程</strong></p>
+<p>Windows系统中的一个基本概念，它包含着一个运行程序所需要的资源，<strong>进程可以包括一个或多个线程</strong>。</p>
+<p><strong>线程</strong></p>
+<p><strong>进程中的基本执行单元，是操作系统分配CPU时间的基本单位，一个进程可以包含若干个线程，在进程入口执行的第一个线程被视为这个进程的主线程。</strong></p>
+<p>线程主要是由CPU寄存器、调用栈和线程本地存储器（Thread Local Storage，TLS）组成的。</p>
+<ul>
+<li><strong>CPU寄存器</strong>主要记录当前所执行线程的状态</li>
+<li><strong>调用栈</strong>主要用于维护线程所调用到的内存与数据</li>
+<li><strong>TLS</strong>主要用于存放线程的状态信息。</li>
+</ul>
+<h2 id="进程和线程的区别"><a href="#进程和线程的区别" class="headerlink" title="进程和线程的区别"></a>进程和线程的区别</h2><p><strong>进程和线程的主要差别在于它们是不同的操作系统资源管理方式</strong>。进程有独立的地址空间，一个进程崩溃后，在保护模式下不会对其它进程产生影响，而线程只是一个进程中的不同执行路径。<strong>线程有自己的堆栈和局部变量，但线程之间没有单独的地址空间</strong>，一个线程死掉就等于整个进程死掉，所以多进程的程序要比多线程的程序健壮，但在进程切换时，耗费资源较大，效率要差一些。但对于一些要求同时进行并且又要共享某些变量的并发操作，只能用线程，不能用进程。</p>
+<ol>
+<li><p>简而言之,一个程序至少有一个进程,一个进程至少有一个线程.</p>
+</li>
+<li><p>线程的划分尺度小于进程，使得多线程程序的并发性高。</p>
+</li>
+<li><p>另外，<strong>进程在执行过程中拥有独立的内存单元</strong>，而<strong>多个线程共享内存</strong>，从而极大地提高了程序的运行效率。</p>
+</li>
+<li><p>线程在执行过程中与进程还是有区别的。每个独立的进程有一个程序运行的入口、顺序执行序列和程序的出口。但是线程不能够独立执行，必须依存在应用程序中，由应用程序提供多个线程执行控制。</p>
+</li>
+<li><p>从逻辑角度来看，<strong>多线程的意义在于一个应用程序中，有多个执行部分可以同时执行</strong>。但操作系统并没有将多个线程看做多个独立的应用，来实现进程的调度和管理以及资源分配。这就是进程和线程的重要区别。</p>
+</li>
+</ol>
+<h1 id="同步（Sync）和异步（Async）"><a href="#同步（Sync）和异步（Async）" class="headerlink" title="同步（Sync）和异步（Async）"></a>同步（Sync）和异步（Async）</h1><p><strong>同步：</strong></p>
+<p>所谓同步，就是发出一个功能调用时，在没有得到结果之前，该调用就不返回或继续执行后续操作。</p>
+<p><strong>异步：</strong></p>
+<p>异步与同步相对，当一个异步过程调用发出后，<strong>调用者在没有得到结果之前，就可以继续执行后续操作</strong>。当这个调用完成后，<strong>一般通过状态、通知和回调来通知调用者</strong>。对于异步调用，调用的返回并不受调用者控制。</p>
+<p>对于通知调用者的三种方式，具体如下：</p>
+<ul>
+<li><p>状态</p>
+<p>即<strong>监听被调用者的状态（轮询）</strong>，调用者需要每隔一定时间检查一次，效率会很低。</p>
+</li>
+<li><p>通知</p>
+<p>当被调用者执行完成后，<strong>发出通知告知调用者</strong>，无需消耗太多性能。</p>
+</li>
+<li><p>回调</p>
+<p>与通知类似，当被调用者执行完成后，会<strong>调用调用者提供的回调函数</strong>。</p>
+</li>
+</ul>
+<p><strong>同步和异步的区别：</strong></p>
+<p>请求发出后，是否需要等待结果，才能继续执行其他操作。</p>
+<h1 id="阻塞和非阻塞"><a href="#阻塞和非阻塞" class="headerlink" title="阻塞和非阻塞"></a>阻塞和非阻塞</h1><p>阻塞和非阻塞这两个概念与<strong>程序（线程）等待消息通知(无所谓同步或者异步)时的状态有关</strong>。</p>
+<p>阻塞和非阻塞关注的是<strong>程序在等待调用结果（消息，返回值）时的状态.</strong></p>
+<p>阻塞调用是指调用结果返回之前，<strong>当前线程会被挂起</strong>。调用线程只有在得到结果之后才会返回。</p>
+<p>非阻塞调用指在不能立刻得到结果之前，<strong>直接返回结果</strong>，使该调用不会阻塞当前线程。</p>
+<p><strong>同步/异步 关注的是消息通知的机制</strong></p>
+<p><strong>阻塞/非阻塞 关注的是程序（线程）等待消息通知时的状态。</strong></p>
+<h1 id="I-O的四种形式"><a href="#I-O的四种形式" class="headerlink" title="I/O的四种形式"></a>I/O的四种形式</h1><ul>
+<li><p>同步阻塞形式</p>
+</li>
+<li><p>异步阻塞形式</p>
+<blockquote>
+<p>异步操作是可以被阻塞住的，只不过它不是在处理消息时阻塞，而是在等待消息通知时被阻塞。</p>
+</blockquote>
+</li>
+<li><p>同步非阻塞形式</p>
+<blockquote>
+<p>很多人会写阻塞的<code>read/write</code> 操作，但是别忘了可以对<code>fd</code>设置<code>O_NONBLOCK </code>标志位，这样就可以将同步操作变成非阻塞的了。</p>
+</blockquote>
+</li>
+<li><p>异步非阻塞形式</p>
+</li>
+</ul>
+<h1 id="I-O-多路复用"><a href="#I-O-多路复用" class="headerlink" title="I/O 多路复用"></a>I/O 多路复用</h1><p>要想客户端和服务器能在网络中通信，那必须得使用 Socket 编程，它是进程间通信里比较特别的方式，特别之处在于它是可以跨主机间通信。</p>
+<h2 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h2><p>只使用一个进程来维护多个请求<br>一个进程虽然任一时刻只能处理一个请求，但是处理每个请求的事件时，耗时控制在 1 毫秒以内，这样 1 秒内就可以处理上千个请求，把时间拉长来看，多个请求复用了一个进程，这就是多路复用，这种思想很类似一个 CPU 并发多个进程，所以也叫做<strong>时分多路复用</strong>。</p>
+<h2 id="TCP协议下的Socket"><a href="#TCP协议下的Socket" class="headerlink" title="TCP协议下的Socket"></a>TCP协议下的Socket</h2><p>TCP 协议的 Socket 程序的整个过程如下图：<br><img src="/2021/05/12/I-O%E5%A4%9A%E8%B7%AF%E5%A4%8D%E7%94%A8%E7%90%86%E8%A7%A3/socket%E5%85%A8%E8%BF%87%E7%A8%8B.png" alt="socket全过程"><br>有没有觉得读写 Socket 的方式，好像读写文件一样。</p>
+<blockquote>
+<p>基于 Linux 一切皆文件的理念，在内核中 Socket 也是以「文件」的形式存在的，也是有对应的文件描述符。<br>关于文件描述符的详细请看这里→<a href="/2021/05/18/%E6%96%87%E4%BB%B6%E6%8F%8F%E8%BF%B0%E7%AC%A6-%E6%96%87%E4%BB%B6%E8%A1%A8%E9%A1%B9">文件描述符/文件表项</a></p>
+</blockquote>
+<h2 id="select-poll"><a href="#select-poll" class="headerlink" title="select/poll"></a>select/poll</h2><p><code>select</code> 实现多路复用的方式是，将已连接的 Socket 都放到一个文件描述符集合，然后调用 select 函数将文件描述符集合拷贝到内核里，让内核来检查是否有网络事件产生，检查的方式很粗暴，就是通过遍历文件描述符集合的方式，当检查到有事件产生后，将此 Socket 标记为可读或可写， 接着再把整个文件描述符集合拷贝回用户态里，然后用户态还需要再通过遍历的方法找到可读或可写的 Socket，然后再对其处理。</p>
+<p>所以，对于 select 这种方式，需要进行 <strong>2 次「遍历」</strong>文件描述符集合，一次是在内核态里，一个次是在用户态里 ，而且还会发生 <strong>2 次「拷贝」</strong>文件描述符集合，先从用户空间传入内核空间，由内核修改后，再传出到用户空间中。</p>
+<p><code>select</code>使用固定长度的 <code>BitsMap</code>，表示文件描述符集合，而且所支持的文件描述符的个数是有限制的，在 Linux 系统中，由内核中的 <code>FD_SETSIZE</code> 限制， 默认最大值为 <code>1024</code>，只能监听 <code>0~1023 </code>的文件描述符。</p>
+<p>poll 不再用 <code>BitsMap</code> 来存储所关注的文件描述符，取而代之用动态数组，以链表形式来组织，突破了<code>select</code>的文件描述符个数限制，当然<strong>还会受到系统文件描述符限制。</strong></p>
+<p>但是 <code>poll </code>和 <code>select</code> 并没有太大的本质区别，都是使用「线性结构」存储进程关注的 <code>Socket </code>集合，因此都需要遍历文件描述符集合来找到可读或可写的 <code>Socket</code>，时间复杂度为 <code>O(n)</code>，而且也需要在用户态与内核态之间拷贝文件描述符集合，这种方式随着并发数上来，性能的损耗会呈指数级增长。</p>
+<h3 id="epoll"><a href="#epoll" class="headerlink" title="epoll"></a>epoll</h3><figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">//epoll_create 建立一个epoll对象</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">epoll_create</span><span class="params">(<span class="keyword">int</span> size)</span></span>;  </span><br><span class="line"><span class="comment">//epoll_ctl 向epoll对象中添加socket套接字；</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">epoll_ctl</span><span class="params">(<span class="keyword">int</span> epfd, <span class="keyword">int</span> op, <span class="keyword">int</span> fd, struct epoll_event *event)</span></span>;</span><br><span class="line"><span class="comment">// epoll_wait 返回已经准备就绪事件的连接</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">epoll_wait</span><span class="params">(<span class="keyword">int</span> epfd, struct epoll_event *events,<span class="keyword">int</span> maxevents, <span class="keyword">int</span> timeout)</span></span>;  </span><br></pre></td></tr></table></figure>
+<p>具体使用请看后面的<em>echo服务器示例</em></p>
+<p>从下图你可以看到 <code>epoll</code> 相关的接口作用：</p>
+<p><img src="/2021/05/12/I-O%E5%A4%9A%E8%B7%AF%E5%A4%8D%E7%94%A8%E7%90%86%E8%A7%A3/1616141449-ykDyCB-file_1616141448576.png" alt="1616141449-ykDyCB-file_1616141448576"></p>
+<p>epoll 通过两个方面，很好解决了 select/poll 的问题。</p>
+<p>第一点，epoll 在内核里使用<strong>红黑树来跟踪进程所有待检测的文件描述字</strong>，把需要监控的 socket 通过 <code>epoll_ctl()</code> 函数加入内核中的红黑树里，红黑树是个高效的数据结构，增删查一般时间复杂度是 <code>O(logn)</code>，通过对这棵黑红树进行操作，这样就不需要像 select/poll 每次操作时都传入整个 socket 集合，只需要传入一个待检测的 socket，减少了内核和用户空间大量的数据拷贝和内存分配。</p>
+<p>第二点，epoll 使用事件驱动的机制，所有添加到epoll中的事件都会与<em>设备(如网卡)驱动程序**</em>建立回调关系<strong>，也就是说相应事件的发生时会调用这里的回调方法。这个回调方法在内核中叫做<code>ep_poll_callback</code>，它会把这样的事件放到上面的</strong>rdllist双向链表**中, 当用户调用<code>epoll_wait()</code>函数时，只会返回有事件发生的文件描述符的个数，不需要像 <code>select/poll</code> 那样轮询扫描整个 socket 集合，大大提高了检测的效率。</p>
+<p><img src="/2021/05/12/I-O%E5%A4%9A%E8%B7%AF%E5%A4%8D%E7%94%A8%E7%90%86%E8%A7%A3/epoll.png" alt="epoll"></p>
+<p>epoll 支持两种事件触发模式，分别是<strong>边缘触发（<em>edge-triggered，ET</em>）</strong>和<strong>水平触发（<em>level-triggered，LT</em>）</strong>。</p>
+<ul>
+<li>水平触发：只要这个文件描述符还有数据可读，每次 <code>epoll_wait</code>都会返回它的事件，提醒用户程序去操作</li>
+<li>边缘触发：当文件描述符上有新的I/O事件到来时，内核才会通知进程</li>
+</ul>
+<p>如果使用水平触发模式，当内核通知文件描述符可读写时，接下来还可以继续去检测它的状态，看它是否依然可读或可写。所以在收到通知后，没必要一次执行尽可能多的读写操作。</p>
+<p>如果使用边缘触发模式，I/O 事件发生时只会通知一次，而且我们不知道到底能读写多少数据，所以在收到通知后应尽可能地读写数据，以免错失读写的机会。因此，我们会循环从文件描述符读写数据，那么如果文件描述符是阻塞的，那这个一直读或一直写势必会在最后一次阻塞。所以，<strong>边缘触发模式一般和非阻塞 I/O 搭配使用</strong>，程序会一直执行 I/O 操作，直到系统调用（如 read 和 write）返回错误，错误类型为 <code>EAGAIN</code> 或<code> EWOULDBLOCK</code>。</p>
+<p><img src="/2021/05/12/I-O%E5%A4%9A%E8%B7%AF%E5%A4%8D%E7%94%A8%E7%90%86%E8%A7%A3/%E8%A7%A6%E5%8F%91%E6%96%B9%E5%BC%8F.png" alt="触发方式"></p>
+<p>一般来说，边缘触发的效率比水平触发的效率要高，因为边缘触发可以减少 <code>epoll_wait </code>的系统调用次数，系统调用也是有一定的开销的的，毕竟也存在上下文的切换。</p>
+<p>select/poll 只有水平触发模式，epoll 默认的触发模式是水平触发，但是可以根据应用场景设置为边缘触发模式。</p>
+<p>另外，使用 I/O 多路复用时，最好搭配非阻塞 I/O 一起使用，Linux 手册关于 select 的内容中有如下说明：</p>
+<blockquote>
+<p>Under Linux, select() may report a socket file descriptor as “ready for reading”, while nevertheless a subsequent read blocks. This could for example happen when data has arrived but upon examination has wrong checksum and is discarded. There may be other circumstances in which a file descriptor is spuriously reported as ready. Thus it may be safer to use O_NONBLOCK on sockets that should not block.</p>
+</blockquote>
+<h2 id="echo服务器"><a href="#echo服务器" class="headerlink" title="echo服务器"></a>echo服务器</h2><p>我们通过一个回射服务器程序来展示<code>epoll</code>的标准用法。先简要介绍<code>epoll</code>的接口。主要由三个函数组成：</p>
+<ul>
+<li><code>epoll_create</code>创建新的<code>epoll</code>实例，一般使用最新的<code>epoll_create1</code>调用</li>
+<li><code>epoll_ctl</code>管理感兴趣的文件描述符和相应事件</li>
+<li><code>epoll_wait</code>返回就绪的文件描述符，然后对它们进行I/O操作</li>
+</ul>
+<p>程序的主要流程如下：</p>
+<ol>
+<li>创建一个监听套接字<code>lfd</code>，调用<code>set_nonblocking</code>函数将其设置为非阻塞</li>
+<li>调用<code>epoll_create1</code>函数创建一个<code>epoll</code>实例，对应的文件描述符为<code>epfd</code></li>
+<li>将监听套接字<code>lfd</code>加入到<code>epfd</code>的事件列表<code>event</code>中，监听的事件为<code>EPOLLIN</code></li>
+<li>进入死循环，<code>epoll_wait</code>函数一直阻塞，直到有事件发生。事件信息保存在<code>evlist</code>中</li>
+<li>检查文件描述符及其事件：<ul>
+<li>如果是发生在监听套接字<code>lfd</code>上的事件，则收到了一个客户请求，将返回的连接套接字<code>cfd</code>设置为边沿触发（EPOLLET）模式，加入到事件列表<code>event</code>中</li>
+<li>如果是连接套接字<code>cfd</code>上发生的事件，对<code>EPOLLIN</code>事件，调用<code>do_echo</code>函数执行回射操作；对<code>EPOLLERR</code>或<code>EPOLLHUP</code>事件，则关闭描述符</li>
+</ul>
+</li>
+</ol>
+<p>全部代码如下：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;errno.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/epoll.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;arpa/inet.h&gt;</span> </span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PORT_NUM   40713</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MAX_EVENTS 1024</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">error</span><span class="params">(<span class="keyword">char</span> *msg)</span> </span>&#123;</span><br><span class="line">    perror(msg);</span><br><span class="line">    <span class="built_in">exit</span>(EXIT_FAILURE);</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 将 fd 设置为非阻塞</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">set_nonblocking</span><span class="params">(<span class="keyword">int</span> fd)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> flags;</span><br><span class="line">    <span class="keyword">if</span> ((flags = fcntl(fd, F_GETFL, <span class="literal">NULL</span>)) &lt; <span class="number">0</span>) &#123;</span><br><span class="line">        error(<span class="string">&quot;ERROR fcntl F_GETFL&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == <span class="number">-1</span>) &#123;</span><br><span class="line">        error(<span class="string">&quot;ERROR fcntl F_SETFL&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">do_echo</span><span class="params">(<span class="keyword">int</span> fd)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">char</span> c, buf[<span class="number">100</span>];</span><br><span class="line">    <span class="keyword">int</span> cnt = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">        <span class="keyword">int</span> n = read(fd, &amp;c, <span class="number">1</span>);</span><br><span class="line">        <span class="keyword">if</span> (n &lt; <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">if</span> (errno == EAGAIN) &#123;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            error(<span class="string">&quot;ERROR read from client&quot;</span>);</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (n == <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        buf[cnt++] = c;</span><br><span class="line">        <span class="keyword">if</span> (c == <span class="string">&#x27;\n&#x27;</span>) &#123;</span><br><span class="line">            <span class="keyword">if</span> (write(fd, buf, cnt) &lt; <span class="number">0</span>) &#123;</span><br><span class="line">                error(<span class="string">&quot;ERROR write to client&quot;</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            cnt = <span class="number">0</span>;</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span> **argv)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> lfd;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_in</span> <span class="title">server_addr</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_in</span> <span class="title">client_addr</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> epfd;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">epoll_event</span> <span class="title">event</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">epoll_event</span> *<span class="title">evlist</span>;</span></span><br><span class="line">    </span><br><span class="line">    server_addr.sin_family = AF_INET;</span><br><span class="line">    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);</span><br><span class="line">    server_addr.sin_port = htons(PORT_NUM);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ((lfd = socket(AF_INET, SOCK_STREAM, <span class="number">0</span>)) &lt; <span class="number">0</span>) &#123;</span><br><span class="line">        error(<span class="string">&quot;ERROR socket&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    set_nonblocking(lfd);</span><br><span class="line">    <span class="keyword">if</span> (bind(lfd, (struct sockaddr *)&amp;server_addr, <span class="keyword">sizeof</span>(server_addr)) &lt; <span class="number">0</span>) &#123;</span><br><span class="line">        error(<span class="string">&quot;ERROR bind&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (listen(lfd, <span class="number">16</span>) &lt; <span class="number">0</span>) &#123;</span><br><span class="line">        error(<span class="string">&quot;ERROR listen&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//创建一个epoll实例，对应的文件描述符为epfd</span></span><br><span class="line">    epfd = epoll_create1(<span class="number">0</span>);</span><br><span class="line">    <span class="keyword">if</span> (epfd &lt; <span class="number">0</span>) &#123;</span><br><span class="line">        perror(<span class="string">&quot;ERROR epoll_create1&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//将监听套接字 lfd 加入到 epfd 的事件列表 event 中，监听的事件为`EPOLLIN`</span></span><br><span class="line">    event.events = EPOLLIN;</span><br><span class="line">    event.data.fd = lfd;</span><br><span class="line">    <span class="comment">//对事件进行监听</span></span><br><span class="line">    <span class="keyword">if</span> (epoll_ctl(epfd, EPOLL_CTL_ADD, lfd, &amp;event) &lt; <span class="number">0</span>) &#123;</span><br><span class="line">        error(<span class="string">&quot;ERROR epoll_ctl&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    evlist = <span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(struct epoll_event)*MAX_EVENTS);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">        <span class="keyword">int</span> cfd;</span><br><span class="line">        <span class="keyword">socklen_t</span> len = <span class="keyword">sizeof</span>(client_addr);</span><br><span class="line">        <span class="comment">//epoll_wait函数一直阻塞，直到有事件发生。事件信息保存在evlist中</span></span><br><span class="line">        <span class="comment">//-1表示如果取不到东西，就无限等待</span></span><br><span class="line">        <span class="comment">//0代表立马返回</span></span><br><span class="line">        <span class="comment">//它会把传入的时间转为绝对时间</span></span><br><span class="line">        <span class="keyword">int</span> ready = epoll_wait(epfd, evlist, MAX_EVENTS, <span class="number">-1</span>);</span><br><span class="line">        <span class="keyword">if</span> (ready == <span class="number">-1</span>) &#123;</span><br><span class="line">            error(<span class="string">&quot;ERROR epoll_wait&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; ready; i++) &#123;</span><br><span class="line">            <span class="comment">//如果是 套接字lfd 就获取</span></span><br><span class="line">            <span class="keyword">if</span> (evlist[i].data.fd == lfd) &#123;</span><br><span class="line">                cfd = accept(lfd, (struct sockaddr *)&amp;client_addr, &amp;len);</span><br><span class="line">                <span class="keyword">if</span> (cfd &lt; <span class="number">0</span>) &#123;</span><br><span class="line">                    perror(<span class="string">&quot;ERROR accept&quot;</span>);</span><br><span class="line">                    <span class="keyword">continue</span>;</span><br><span class="line">                &#125;</span><br><span class="line">                set_nonblocking(cfd);</span><br><span class="line">                event.events = EPOLLIN | EPOLLET | EPOLLRDHUP;</span><br><span class="line">                event.data.fd = cfd;</span><br><span class="line">                epoll_ctl(epfd, EPOLL_CTL_ADD, cfd, &amp;event);</span><br><span class="line">                <span class="comment">//如果是可读事件发生,进行操作</span></span><br><span class="line">            &#125; <span class="keyword">else</span> <span class="keyword">if</span> (evlist[i].events &amp; EPOLLIN) &#123;</span><br><span class="line">                cfd = evlist[i].data.fd;</span><br><span class="line">                do_echo(cfd);</span><br><span class="line">            &#125; <span class="keyword">else</span> <span class="keyword">if</span> (evlist[i].events &amp; (EPOLLHUP | EPOLLERR)) &#123;</span><br><span class="line">                <span class="keyword">if</span> (close(evlist[i].data.fd) == <span class="number">-1</span>) &#123;</span><br><span class="line">                    error(<span class="string">&quot;ERROR close&quot;</span>);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    close(lfd);</span><br><span class="line">    <span class="built_in">exit</span>(EXIT_SUCCESS);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><ol>
+<li><a href="https://www.cnblogs.com/mhq-martin/p/9035640.html">15分钟读懂进程线程、同步异步、阻塞非阻塞、并发并行 - mhq_martin - 博客园 (cnblogs.com)</a></li>
+<li><a href="https://leetcode-cn.com/circle/discuss/ylV7i6/">分享｜再也不怕被问 I/O 多路复用 | 技术人求职记 - 力扣（LeetCode） (leetcode-cn.com)</a></li>
+<li><a href="https://panqiincs.me/2015/08/01/io-multiplexing-with-epoll/">I/O多路复用之epoll | 辛未羊的网络日志 (panqiincs.me)</a></li>
+<li><a href="https://blog.csdn.net/daaikuaichuan/article/details/83862311?ivk_sa=1024320u">epoll原理详解及epoll反应堆模型</a></li>
+<li><a href="https://journey-c.github.io/io-multiplexing/#5-epoll">Linux的I/O多路复用机制 - Journey-C</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>操作系统</category>
+      </categories>
+      <tags>
+        <tag>面试题</tag>
+        <tag>I/O</tag>
+        <tag>同步/异步</tag>
+        <tag>阻塞/非阻塞</tag>
+        <tag>进程/线程</tag>
+      </tags>
+  </entry>
+</search>
