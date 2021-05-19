@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.ico">
+  <link rel="mask-icon" href="/images/favicon.ico" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.likeyl.cn","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"valine","storage":true,"lazyload":false,"nav":null,"activeClass":"valine"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="这篇文章我们将重点讨论 进程&#x2F;线程、同步&#x2F;异步、阻塞&#x2F;非阻塞问题">
+<meta property="og:type" content="article">
+<meta property="og:title" content="进程&#x2F;线程、同步&#x2F;异步、阻塞&#x2F;非阻塞">
+<meta property="og:url" content="https://www.likeyl.cn/2021/05/19/%E8%BF%9B%E7%A8%8B-%E7%BA%BF%E7%A8%8B%E3%80%81%E5%90%8C%E6%AD%A5-%E5%BC%82%E6%AD%A5%E3%80%81%E9%98%BB%E5%A1%9E-%E9%9D%9E%E9%98%BB%E5%A1%9E/index.html">
+<meta property="og:site_name" content="like随笔">
+<meta property="og:description" content="这篇文章我们将重点讨论 进程&#x2F;线程、同步&#x2F;异步、阻塞&#x2F;非阻塞问题">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.likeyl.cn/2021/05/19/%E8%BF%9B%E7%A8%8B-%E7%BA%BF%E7%A8%8B%E3%80%81%E5%90%8C%E6%AD%A5-%E5%BC%82%E6%AD%A5%E3%80%81%E9%98%BB%E5%A1%9E-%E9%9D%9E%E9%98%BB%E5%A1%9E/%E5%BC%82%E6%AD%A5%E6%89%A7%E8%A1%8C%E8%BF%87%E7%A8%8B.jpg">
+<meta property="og:image" content="https://www.likeyl.cn/2021/05/19/%E8%BF%9B%E7%A8%8B-%E7%BA%BF%E7%A8%8B%E3%80%81%E5%90%8C%E6%AD%A5-%E5%BC%82%E6%AD%A5%E3%80%81%E9%98%BB%E5%A1%9E-%E9%9D%9E%E9%98%BB%E5%A1%9E/evenloop.png">
+<meta property="article:published_time" content="2021-05-19T10:42:28.000Z">
+<meta property="article:modified_time" content="2021-05-19T11:20:31.737Z">
+<meta property="article:author" content="like">
+<meta property="article:tag" content="JavaScript">
+<meta property="article:tag" content="同步&#x2F;异步">
+<meta property="article:tag" content="阻塞&#x2F;非阻塞">
+<meta property="article:tag" content="进程&#x2F;线程">
+<meta property="article:tag" content="even loop">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.likeyl.cn/2021/05/19/%E8%BF%9B%E7%A8%8B-%E7%BA%BF%E7%A8%8B%E3%80%81%E5%90%8C%E6%AD%A5-%E5%BC%82%E6%AD%A5%E3%80%81%E9%98%BB%E5%A1%9E-%E9%9D%9E%E9%98%BB%E5%A1%9E/%E5%BC%82%E6%AD%A5%E6%89%A7%E8%A1%8C%E8%BF%87%E7%A8%8B.jpg">
+
+<link rel="canonical" href="https://www.likeyl.cn/2021/05/19/%E8%BF%9B%E7%A8%8B-%E7%BA%BF%E7%A8%8B%E3%80%81%E5%90%8C%E6%AD%A5-%E5%BC%82%E6%AD%A5%E3%80%81%E9%98%BB%E5%A1%9E-%E9%9D%9E%E9%98%BB%E5%A1%9E/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>进程/线程、同步/异步、阻塞/非阻塞 | like随笔</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">like随笔</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">记录点滴</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">13</span></a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">3</span></a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">5</span></a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.likeyl.cn/2021/05/19/%E8%BF%9B%E7%A8%8B-%E7%BA%BF%E7%A8%8B%E3%80%81%E5%90%8C%E6%AD%A5-%E5%BC%82%E6%AD%A5%E3%80%81%E9%98%BB%E5%A1%9E-%E9%9D%9E%E9%98%BB%E5%A1%9E/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/header.jpg">
+      <meta itemprop="name" content="like">
+      <meta itemprop="description" content="欲穷千里目，更上一层楼">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="like随笔">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          进程/线程、同步/异步、阻塞/非阻塞
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2021-05-19 18:42:28 / 修改时间：19:20:31" itemprop="dateCreated datePublished" datetime="2021-05-19T18:42:28+08:00">2021-05-19</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">操作系统</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2021/05/19/%E8%BF%9B%E7%A8%8B-%E7%BA%BF%E7%A8%8B%E3%80%81%E5%90%8C%E6%AD%A5-%E5%BC%82%E6%AD%A5%E3%80%81%E9%98%BB%E5%A1%9E-%E9%9D%9E%E9%98%BB%E5%A1%9E/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2021/05/19/%E8%BF%9B%E7%A8%8B-%E7%BA%BF%E7%A8%8B%E3%80%81%E5%90%8C%E6%AD%A5-%E5%BC%82%E6%AD%A5%E3%80%81%E9%98%BB%E5%A1%9E-%E9%9D%9E%E9%98%BB%E5%A1%9E/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>这篇文章我们将重点讨论 <strong>进程/线程、同步/异步、阻塞/非阻塞</strong>问题</p>
+<span id="more"></span>
+
+<h1 id="进程、线程"><a href="#进程、线程" class="headerlink" title="进程、线程"></a>进程、线程</h1><h2 id="进程"><a href="#进程" class="headerlink" title="进程"></a>进程</h2><p>Windows系统中的一个基本概念，它包含着一个运行程序所需要的资源，<strong>进程可以包括一个或多个线程</strong>。</p>
+<h2 id="线程"><a href="#线程" class="headerlink" title="线程"></a>线程</h2><p><strong>进程中的基本执行单元，是操作系统分配CPU时间的基本单位，一个进程可以包含若干个线程，在进程入口执行的第一个线程被视为这个进程的主线程。</strong></p>
+<p>线程主要是由CPU寄存器、调用栈和线程本地存储器（Thread Local Storage，TLS）组成的。</p>
+<ul>
+<li><strong>CPU寄存器</strong>主要记录当前所执行线程的状态</li>
+<li><strong>调用栈</strong>主要用于维护线程所调用到的内存与数据</li>
+<li><strong>TLS</strong>主要用于存放线程的状态信息。</li>
+</ul>
+<h2 id="进程和线程的区别"><a href="#进程和线程的区别" class="headerlink" title="进程和线程的区别"></a>进程和线程的区别</h2><p><strong>进程和线程的主要差别在于它们是不同的操作系统资源管理方式</strong>。进程有独立的地址空间，一个进程崩溃后，在保护模式下不会对其它进程产生影响，而线程只是一个进程中的不同执行路径。<strong>线程有自己的堆栈和局部变量，但线程之间没有单独的地址空间</strong>，一个线程死掉就等于整个进程死掉，所以多进程的程序要比多线程的程序健壮，但在进程切换时，耗费资源较大，效率要差一些。但对于一些要求同时进行并且又要共享某些变量的并发操作，只能用线程，不能用进程。</p>
+<ol>
+<li><p>简而言之,一个程序至少有一个进程,一个进程至少有一个线程.</p>
+</li>
+<li><p>线程的划分尺度小于进程，使得多线程程序的并发性高。</p>
+</li>
+<li><p>另外，<strong>进程在执行过程中拥有独立的内存单元</strong>，而<strong>多个线程共享内存</strong>，从而极大地提高了程序的运行效率。</p>
+</li>
+<li><p>线程在执行过程中与进程还是有区别的。每个独立的进程有一个程序运行的入口、顺序执行序列和程序的出口。但是线程不能够独立执行，必须依存在应用程序中，由应用程序提供多个线程执行控制。</p>
+</li>
+<li><p>从逻辑角度来看，<strong>多线程的意义在于一个应用程序中，有多个执行部分可以同时执行</strong>。但操作系统并没有将多个线程看做多个独立的应用，来实现进程的调度和管理以及资源分配。这就是进程和线程的重要区别。</p>
+</li>
+</ol>
+<h1 id="同步（Sync）和异步（Async）"><a href="#同步（Sync）和异步（Async）" class="headerlink" title="同步（Sync）和异步（Async）"></a>同步（Sync）和异步（Async）</h1><h2 id="同步"><a href="#同步" class="headerlink" title="同步"></a>同步</h2><p>所谓同步，就是发出一个功能调用时，在没有得到结果之前，该调用就不返回或继续执行后续操作。</p>
+<h2 id="异步"><a href="#异步" class="headerlink" title="异步"></a>异步</h2><p>异步与同步相对，当一个异步过程调用发出后，<strong>调用者在没有得到结果之前，就可以继续执行后续操作</strong>。当这个调用完成后，<strong>一般通过状态、通知和回调来通知调用者</strong>。对于异步调用，调用的返回并不受调用者控制。</p>
+<p>对于通知调用者的三种方式，具体如下：</p>
+<ul>
+<li><p>状态</p>
+<p>即<strong>监听被调用者的状态（轮询）</strong>，调用者需要每隔一定时间检查一次，效率会很低。</p>
+</li>
+<li><p>通知</p>
+<p>当被调用者执行完成后，<strong>发出通知告知调用者</strong>，无需消耗太多性能。</p>
+</li>
+<li><p>回调</p>
+<p>与通知类似，当被调用者执行完成后，会<strong>调用调用者提供的回调函数</strong>。</p>
+</li>
+</ul>
+<h2 id="JavaScript中的异步"><a href="#JavaScript中的异步" class="headerlink" title="JavaScript中的异步"></a>JavaScript中的异步</h2><p>众所周知，js语言的一大特点就是单线程，那么它的异步是怎么实现的呢？</p>
+<h3 id="任务队列"><a href="#任务队列" class="headerlink" title="任务队列"></a>任务队列</h3><p>js中IO设备（输入输出设备）很慢(如Ajax操作从网络读取数据)，不得不等着结果出来，再往下执行。<br>JavaScript语言的设计者意识到，这时主线程完全可以不管IO设备，<strong>挂起处于等待中的任务，先运行排在后面的任务</strong>。等到IO设备返回了结果，再回过头，把挂起的任务继续执行下去。<br>于是，所有任务可以分成两种，</p>
+<ul>
+<li>一种是<strong>同步任务（synchronous）</strong><br>同步任务指的是，在主线程上排队执行的任务，只有前一个任务执行完毕，才能执行后一个任务</li>
+<li>另一种是<strong>异步任务（asynchronous）</strong><br>异步任务指的是，不进入主线程，而进入”任务队列”（task queue）的任务，只有”任务队列”通知主线程，某个异步任务可以执行了，该任务才会进入主线程执行。</li>
+</ul>
+<p>具体来说，异步执行的运行机制如下。（同步执行也是如此，因为它可以被视为没有异步任务的异步执行。）</p>
+<ol>
+<li>所有同步任务都在主线程上执行，形成一个<strong>执行栈（execution context stack）</strong>。</li>
+<li>主线程之外，还存在一个”<strong>任务队列”（task queue）</strong>。只要异步任务有了运行结果，就在”任务队列”之中放置一个事件。</li>
+<li>一旦”<strong>执行栈</strong>“中的所有同步任务执行完毕，系统就会读取”任务队列”，看看里面有哪些事件。那些对应的异步任务，于是结束等待状态，进入执行栈，开始执行。</li>
+<li>主线程不断重复上面的第三步。</li>
+</ol>
+<p><img src="/2021/05/19/%E8%BF%9B%E7%A8%8B-%E7%BA%BF%E7%A8%8B%E3%80%81%E5%90%8C%E6%AD%A5-%E5%BC%82%E6%AD%A5%E3%80%81%E9%98%BB%E5%A1%9E-%E9%9D%9E%E9%98%BB%E5%A1%9E/%E5%BC%82%E6%AD%A5%E6%89%A7%E8%A1%8C%E8%BF%87%E7%A8%8B.jpg" alt="异步执行过程.jpg"><br>只要主线程空了，就会去读取”任务队列”，这就是js的运行机制。这个过程会不断重复。</p>
+<h3 id="事件和回调函数"><a href="#事件和回调函数" class="headerlink" title="事件和回调函数"></a>事件和回调函数</h3><h4 id="事件"><a href="#事件" class="headerlink" title="事件"></a>事件</h4><p>一个事件的队列（也可以理解成消息的队列），IO设备完成一项任务，就在”任务队列”中添加一个事件，表示相关的异步任务可以进入”执行栈”了。主线程读取”任务队列”，就是读取里面有哪些事件。</p>
+<p>“任务队列”中的事件，除了IO设备的事件以外，还包括一些用户产生的事件（比如鼠标点击、页面滚动等等）。只要指定过回调函数，这些事件发生时就会进入”任务队列”，等待主线程读取。</p>
+<h4 id="回调函数（callback）"><a href="#回调函数（callback）" class="headerlink" title="回调函数（callback）"></a>回调函数（callback）</h4><p>那些会被主线程挂起来的代码。异步任务必须指定回调函数，当<strong>主线程开始执行异步任务，就是执行对应的回调函数</strong>。</p>
+<h3 id="Event-Loop"><a href="#Event-Loop" class="headerlink" title="Event Loop"></a>Event Loop</h3><p>主线程从”任务队列”中读取事件，这个过程是循环不断的，所以整个的这种运行机制又称为Event Loop（事件循环）。</p>
+<p><img src="/2021/05/19/%E8%BF%9B%E7%A8%8B-%E7%BA%BF%E7%A8%8B%E3%80%81%E5%90%8C%E6%AD%A5-%E5%BC%82%E6%AD%A5%E3%80%81%E9%98%BB%E5%A1%9E-%E9%9D%9E%E9%98%BB%E5%A1%9E/evenloop.png" alt="evenloop"></p>
+<p>上图中，主线程运行的时候，产生堆（heap）和栈（stack），栈中的代码调用各种<strong>外部API</strong>，它们<strong>在”任务队列”中加入各种事件</strong>（click，load，done）。只要栈中的代码执行完毕，主线程就会去<strong>读取”任务队列”<strong>，</strong>依次执行那些事件所对应的回调函数</strong>。</p>
+<p>执行栈中的代码（同步任务），总是在读取”任务队列”（异步任务）之前执行。请看下面这个例子。</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> req = <span class="keyword">new</span> XMLHttpRequest();</span><br><span class="line">req.open(<span class="string">&#x27;GET&#x27;</span>, url);    </span><br><span class="line">req.onload = <span class="function"><span class="keyword">function</span> (<span class="params"></span>)</span>&#123;&#125;;    </span><br><span class="line">req.onerror = <span class="function"><span class="keyword">function</span> (<span class="params"></span>)</span>&#123;&#125;;    </span><br><span class="line">req.send();</span><br></pre></td></tr></table></figure>
+
+<p>上面代码中的<code>req.send</code>方法是Ajax操作向服务器发送数据，它是一个异步任务，意味着只有当前脚本的所有代码执行完，系统才会去读取”任务队列”。所以，它与下面的写法等价。</p>
+<pre><code class="js">var req = new XMLHttpRequest();
+req.open(&#39;GET&#39;, url);    
+req.send();
+req.onload = function ()&#123;&#125;;    
+req.onerror = function ()&#123;&#125;;    
+</code></pre>
+<p>也就是说，指定回调函数的部分（onload和onerror），在send()方法的前面或后面无关紧要，因为它们属于执行栈的一部分，系统总是执行完它们，才会去读取”任务队列”。</p>
+<h2 id="同步和异步的区别"><a href="#同步和异步的区别" class="headerlink" title="同步和异步的区别"></a>同步和异步的区别</h2><p>请求发出后，是否需要等待结果，才能继续执行其他操作。</p>
+<h1 id="阻塞和非阻塞"><a href="#阻塞和非阻塞" class="headerlink" title="阻塞和非阻塞"></a>阻塞和非阻塞</h1><p>阻塞和非阻塞这两个概念与<strong>程序（线程）等待消息通知(无所谓同步或者异步)时的状态有关</strong>。</p>
+<p>阻塞和非阻塞关注的是<strong>程序在等待调用结果（消息，返回值）时的状态.</strong></p>
+<p>阻塞调用是指调用结果返回之前，<strong>当前线程会被挂起</strong>。调用线程只有在得到结果之后才会返回。</p>
+<p>非阻塞调用指在不能立刻得到结果之前，<strong>直接返回结果</strong>，使该调用不会阻塞当前线程。</p>
+<p><strong>同步/异步 关注的是消息通知的机制</strong></p>
+<p><strong>阻塞/非阻塞 关注的是程序（线程）等待消息通知时的状态。</strong></p>
+<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><ol>
+<li><a target="_blank" rel="noopener" href="https://www.cnblogs.com/mhq-martin/p/9035640.html">15分钟读懂进程线程、同步异步、阻塞非阻塞、并发并行 - mhq_martin - 博客园 (cnblogs.com)</a></li>
+<li><a target="_blank" rel="noopener" href="http://www.ruanyifeng.com/blog/2014/10/event-loop.html">JavaScript 运行机制详解：再谈Event Loop</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+        <div class="reward-container">
+  <div>坚持原创技术分享，您的支持将鼓励我继续创作！</div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/images/wechatAppreciation.jpg" alt="like 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/images/alipayAppreciation.jpg" alt="like 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>like
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.likeyl.cn/2021/05/19/%E8%BF%9B%E7%A8%8B-%E7%BA%BF%E7%A8%8B%E3%80%81%E5%90%8C%E6%AD%A5-%E5%BC%82%E6%AD%A5%E3%80%81%E9%98%BB%E5%A1%9E-%E9%9D%9E%E9%98%BB%E5%A1%9E/" title="进程&#x2F;线程、同步&#x2F;异步、阻塞&#x2F;非阻塞">https://www.likeyl.cn/2021/05/19/进程-线程、同步-异步、阻塞-非阻塞/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/JavaScript/" rel="tag"><i class="fa fa-tag"></i> JavaScript</a>
+              <a href="/tags/%E5%90%8C%E6%AD%A5-%E5%BC%82%E6%AD%A5/" rel="tag"><i class="fa fa-tag"></i> 同步/异步</a>
+              <a href="/tags/%E9%98%BB%E5%A1%9E-%E9%9D%9E%E9%98%BB%E5%A1%9E/" rel="tag"><i class="fa fa-tag"></i> 阻塞/非阻塞</a>
+              <a href="/tags/%E8%BF%9B%E7%A8%8B-%E7%BA%BF%E7%A8%8B/" rel="tag"><i class="fa fa-tag"></i> 进程/线程</a>
+              <a href="/tags/even-loop/" rel="tag"><i class="fa fa-tag"></i> even loop</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/05/19/goroutine%E7%9B%B8%E5%85%B3%E7%A0%94%E7%A9%B6/" rel="prev" title="goroutine相关研究">
+      <i class="fa fa-chevron-left"></i> goroutine相关研究
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E3%80%81%E7%BA%BF%E7%A8%8B"><span class="nav-number">1.</span> <span class="nav-text">进程、线程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B"><span class="nav-number">1.1.</span> <span class="nav-text">进程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B"><span class="nav-number">1.2.</span> <span class="nav-text">线程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E5%92%8C%E7%BA%BF%E7%A8%8B%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="nav-number">1.3.</span> <span class="nav-text">进程和线程的区别</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%90%8C%E6%AD%A5%EF%BC%88Sync%EF%BC%89%E5%92%8C%E5%BC%82%E6%AD%A5%EF%BC%88Async%EF%BC%89"><span class="nav-number">2.</span> <span class="nav-text">同步（Sync）和异步（Async）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%8C%E6%AD%A5"><span class="nav-number">2.1.</span> <span class="nav-text">同步</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%82%E6%AD%A5"><span class="nav-number">2.2.</span> <span class="nav-text">异步</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#JavaScript%E4%B8%AD%E7%9A%84%E5%BC%82%E6%AD%A5"><span class="nav-number">2.3.</span> <span class="nav-text">JavaScript中的异步</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A1%E9%98%9F%E5%88%97"><span class="nav-number">2.3.1.</span> <span class="nav-text">任务队列</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BA%8B%E4%BB%B6%E5%92%8C%E5%9B%9E%E8%B0%83%E5%87%BD%E6%95%B0"><span class="nav-number">2.3.2.</span> <span class="nav-text">事件和回调函数</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BA%8B%E4%BB%B6"><span class="nav-number">2.3.2.1.</span> <span class="nav-text">事件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9B%9E%E8%B0%83%E5%87%BD%E6%95%B0%EF%BC%88callback%EF%BC%89"><span class="nav-number">2.3.2.2.</span> <span class="nav-text">回调函数（callback）</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Event-Loop"><span class="nav-number">2.3.3.</span> <span class="nav-text">Event Loop</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%8C%E6%AD%A5%E5%92%8C%E5%BC%82%E6%AD%A5%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="nav-number">2.4.</span> <span class="nav-text">同步和异步的区别</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%98%BB%E5%A1%9E%E5%92%8C%E9%9D%9E%E9%98%BB%E5%A1%9E"><span class="nav-number">3.</span> <span class="nav-text">阻塞和非阻塞</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">4.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="like"
+      src="/images/header.jpg">
+  <p class="site-author-name" itemprop="name">like</p>
+  <div class="site-description" itemprop="description">欲穷千里目，更上一层楼</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">5</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/likewl" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;likewl" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:535889315@qq.com" title="E-Mail → mailto:535889315@qq.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://weibo.com/1819879637" title="Weibo → https:&#x2F;&#x2F;weibo.com&#x2F;1819879637" rel="noopener" target="_blank"><i class="fab fa-weibo fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fas fa-blog"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">旧地址： <a target="_blank" rel="noopener" href="https://old.likeyl.cn/">old.likeyl.cn</a></span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">11 分钟</span>
+</div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'ryfcVcL4MG8AbmbItr011Gj6-9Nh9j0Va',
+      appKey     : 'LO9HGMjq2CfmAh91Oo2xIx3A',
+      placeholder: "请在此输入您的留言",
+      avatar     : 'wavatar',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : 'zh-cn' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : true,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>
