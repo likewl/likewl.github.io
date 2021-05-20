@@ -64,6 +64,7 @@
 <blockquote>
 <p>Under Linux, select() may report a socket file descriptor as “ready for reading”, while nevertheless a subsequent read blocks. This could for example happen when data has arrived but upon examination has wrong checksum and is discarded. There may be other circumstances in which a file descriptor is spuriously reported as ready. Thus it may be safer to use O_NONBLOCK on sockets that should not block.</p>
 </blockquote>
+<h3 id="为什么部分IO设备不需要CPU-题外话"><a href="#为什么部分IO设备不需要CPU-题外话" class="headerlink" title="为什么部分IO设备不需要CPU(题外话)"></a>为什么部分IO设备不需要CPU(题外话)</h3><p><code>字符设备</code>, 比如键盘, 打印机等, 还是得通过CPU的。<br><code>块设备</code>I/O模块增加DMA(Direct Memory Access 直接存储器)控制器. DMA控制器类似于一个小的CPU, 有自己的寄存器(记录主存地址和取到的字的count等). CPU可以发起一个DMA请求, 传入读写操作类型, 相关I/O设备地址, 内存的起始地址, 要操作的字数.然<br>后DMA就可以获取总线的控制权, 将一大块内存和外部I/O读入或写出.等操作完成后, 再通知CPU. 释放总线控制权。</p>
 <h2 id="echo服务器"><a href="#echo服务器" class="headerlink" title="echo服务器"></a>echo服务器</h2><p>我们通过一个回射服务器程序来展示<code>epoll</code>的标准用法。先简要介绍<code>epoll</code>的接口。主要由三个函数组成：</p>
 <ul>
 <li><code>epoll_create</code>创建新的<code>epoll</code>实例，一般使用最新的<code>epoll_create1</code>调用</li>
@@ -100,20 +101,6 @@
       <tags>
         <tag>I/O</tag>
         <tag>面试题</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>goroutine相关研究</title>
-    <url>/2021/05/19/goroutine%E7%9B%B8%E5%85%B3%E7%A0%94%E7%A9%B6/</url>
-    <content><![CDATA[<p>goroutine 相关 研究</p>
-<span id="more"></span>
-<h1 id="面试题"><a href="#面试题" class="headerlink" title="面试题"></a>面试题</h1><h2 id="双协程交替打印1-10"><a href="#双协程交替打印1-10" class="headerlink" title="双协程交替打印1-10"></a>双协程交替打印1-10</h2><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 双协程交替打印1-10</span></span><br><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> <span class="string">&quot;fmt&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	a := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">int</span>)</span><br><span class="line">	exit := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">bool</span>)</span><br><span class="line">	<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">		<span class="keyword">for</span> i := <span class="number">2</span>; i &lt;= <span class="number">10</span>; i += <span class="number">2</span> &#123;</span><br><span class="line">			fmt.Println(<span class="string">&quot;A:&quot;</span>, &lt;-a) <span class="comment">//等待打印</span></span><br><span class="line">			a &lt;- i                 <span class="comment">//传入，下面的协程接受</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;()</span><br><span class="line">	<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">		<span class="keyword">defer</span> <span class="built_in">close</span>(exit)</span><br><span class="line">		<span class="keyword">for</span> i := <span class="number">1</span>; i &lt;= <span class="number">9</span>; i += <span class="number">2</span> &#123;</span><br><span class="line">			a &lt;- i                 <span class="comment">//传入，上面的协程接受</span></span><br><span class="line">			fmt.Println(<span class="string">&quot;B:&quot;</span>, &lt;-a) <span class="comment">//等待打印</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;()</span><br><span class="line">	&lt;-exit</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>]]></content>
-      <categories>
-        <category>golang</category>
-      </categories>
-      <tags>
-        <tag>面试题</tag>
-        <tag>goroutine</tag>
       </tags>
   </entry>
   <entry>
@@ -225,6 +212,136 @@
       </tags>
   </entry>
   <entry>
+    <title>goroutine相关研究</title>
+    <url>/2021/05/19/goroutine%E7%9B%B8%E5%85%B3%E7%A0%94%E7%A9%B6/</url>
+    <content><![CDATA[<p>goroutine 相关 研究</p>
+<span id="more"></span>
+<h1 id="面试题"><a href="#面试题" class="headerlink" title="面试题"></a>面试题</h1><h2 id="双协程交替打印1-10"><a href="#双协程交替打印1-10" class="headerlink" title="双协程交替打印1-10"></a>双协程交替打印1-10</h2><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 双协程交替打印1-10</span></span><br><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> <span class="string">&quot;fmt&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	a := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">int</span>)</span><br><span class="line">	exit := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">bool</span>)</span><br><span class="line">	<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">		<span class="keyword">for</span> i := <span class="number">2</span>; i &lt;= <span class="number">10</span>; i += <span class="number">2</span> &#123;</span><br><span class="line">			fmt.Println(<span class="string">&quot;A:&quot;</span>, &lt;-a) <span class="comment">//等待打印</span></span><br><span class="line">			a &lt;- i                 <span class="comment">//传入，下面的协程接受</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;()</span><br><span class="line">	<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">		<span class="keyword">defer</span> <span class="built_in">close</span>(exit)</span><br><span class="line">		<span class="keyword">for</span> i := <span class="number">1</span>; i &lt;= <span class="number">9</span>; i += <span class="number">2</span> &#123;</span><br><span class="line">			a &lt;- i                 <span class="comment">//传入，上面的协程接受</span></span><br><span class="line">			fmt.Println(<span class="string">&quot;B:&quot;</span>, &lt;-a) <span class="comment">//等待打印</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;()</span><br><span class="line">	&lt;-exit</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>]]></content>
+      <categories>
+        <category>golang</category>
+      </categories>
+      <tags>
+        <tag>面试题</tag>
+        <tag>goroutine</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>线程/协程详解</title>
+    <url>/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3/</url>
+    <content><![CDATA[<p>之前一篇文章简单介绍了进程和线程，这篇文章我们将介绍一下线程和协程</p>
+<span id="more"></span>
+<p>在说这写概念之前，我们需要了解一下什么是<code>内核态</code>和<code>用户态</code></p>
+<h1 id="内核态-用户态"><a href="#内核态-用户态" class="headerlink" title="内核态/用户态"></a>内核态/用户态</h1><p>由于需要限制不同的程序之间的访问能力, 防止他们获取别的程序的内存数据, 或者获取外围设备的数据, 并发送到网络, CPU划分出两个权限等级 :<strong>用户态</strong> 和 <strong>内核态</strong></p>
+<ul>
+<li><strong>内核态</strong>: CPU可以访问内存所有数据, 包括外围设备, 例如硬盘, 网卡。CPU也可以将自己从一个程序切换到另一个程序</li>
+<li><strong>用户态</strong>: 只能受限的访问内存, 且不允许访问外围设备。 占用CPU的能力被剥夺, CPU资源可以被其他程序获取</li>
+</ul>
+<h2 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h2><p>用户空间中的代码被限制了只能使用一个局部的内存空间，我们说这些程序在<strong>用户态（User Mode）</strong> 执行。<br>内核空间中的代码可以访问所有内存，我们称这些程序在<strong>内核态（Kernal Mode）</strong> 执行。</p>
+<h2 id="如何切换"><a href="#如何切换" class="headerlink" title="如何切换"></a>如何切换</h2><p>所有用户程序都是运行在用户态的, 但是有时候程序确实需要做一些内核态的事情, 例如从硬盘读取数据, 或者从键盘获取输入等. 而唯一可以做这些事情的就是操作系统, 所以此时程序就需要先操作系统请求以程序的名义来执行这些操作.</p>
+<p>这时需要一个这样的机制: 用户态程序切换到内核态, 但是不能控制在内核态中执行的指令</p>
+<p>这种机制叫<strong>系统调用</strong>, 在CPU中的实现称之为<strong>陷阱指令(Trap Instruction)</strong></p>
+<p>他们的工作流程如下:</p>
+<ol>
+<li>用户态程序将一些数据值放在寄存器中, 或者使用参数创建一个堆栈(stack frame), 以此表明需要操作系统提供的服务.</li>
+<li>用户态程序执行陷阱指令</li>
+<li>CPU切换到内核态, 并跳到位于内存指定位置的指令, 这些指令是操作系统的一部分, 他们具有内存保护, 不可被用户态程序访问</li>
+<li>这些指令称之为陷阱(trap)或者系统调用处理器(system call handler). 他们会读取程序放入内存的数据参数, 并执行程序请求的服务</li>
+<li>系统调用完成后, 操作系统会重置CPU为用户态并返回系统调用的结果</li>
+</ol>
+<h3 id="切换方式"><a href="#切换方式" class="headerlink" title="切换方式"></a>切换方式</h3><ul>
+<li><p>系统调用<br>这是用户态进程主动要求切换到内核态的一种方式，用户态进程通过系统调用申请使用操作系统提供的服务程序完成工作。而系统调用的机制其核心还是使用了操作系统为用户特别开放的<strong>一个中断来实现</strong>，例如Linux的int 80h中断。</p>
+</li>
+<li><p>异常<br>当CPU在执行运行在用户态下的程序时，发生了某些事先不可知的异常，这时会触发由当前运行进程切换到处理此异常的内核相关程序中，也就转到了内核态，比如缺页异常。</p>
+</li>
+<li><p>外围设备的中断<br>当外围设备完成用户请求的操作后，会向CPU发出相应的中断信号，这时CPU会暂停执行下一条即将要执行的指令转而去执行与中断信号对应的处理程序，如果先前执行的指令是用户态下的程序，那么这个转换的过程自然也就发生了由用户态到内核态的切换。比如硬盘读写操作完成，系统会切换到硬盘读写的中断处理程序中执行后续操作等。</p>
+</li>
+</ul>
+<p>这3种方式是系统在运行时由用户态转到内核态的最主要方式，其中系统调用可以认为是用户进程主动发起的，异常和外围设备中断则是被动的。</p>
+<h1 id="线程-协程"><a href="#线程-协程" class="headerlink" title="线程/协程"></a>线程/协程</h1><h2 id="线程"><a href="#线程" class="headerlink" title="线程"></a>线程</h2><p>线程分为用户态线程和内核态线程</p>
+<h3 id="用户态线程"><a href="#用户态线程" class="headerlink" title="用户态线程"></a>用户态线程</h3><p>用户态线程也称作用户级线程（User Level Thread）。操作系统内核并不知道它的存在，它完全是在用户空间中创建。<br>用户级线程有很多<strong>优势</strong>：</p>
+<ul>
+<li><strong>管理开销小</strong>：创建、销毁不需要系统调用。</li>
+<li><strong>切换成本低</strong>：用户空间程序可以自己维护，不需要走操作系统调度。</li>
+</ul>
+<p>但是这种线程也有很多的<strong>缺点</strong>：</p>
+<ul>
+<li><strong>与内核协作成本高</strong>：比如这种线程完全是用户空间程序在管理，当它进行 I/O 的时候，无法利用到内核的优势，需要频繁进行用户态到内核态的切换。</li>
+<li><strong>线程间协作成本高</strong>：设想两个线程需要通信，通信需要 I/O，I/O 需要系统调用，因此用户态线程需要支付额外的系统调用成本。</li>
+<li><strong>无法利用多核优势</strong>(N:1模型中)：比如操作系统调度的仍然是这个线程所属的进程，所以无论每次一个进程有多少用户态的线程，都只能并发执行一个线程，因此一个进程的多个线程无法利用多核的优势。</li>
+<li><strong>操作系统无法针对线程调度进行优化</strong>：当一个进程的一个用户态线程阻塞（Block）了，操作系统无法及时发现和处理阻塞问题，它不会更换执行其他线程，从而造成资源浪费。</li>
+</ul>
+<h3 id="内核态线程"><a href="#内核态线程" class="headerlink" title="内核态线程"></a>内核态线程</h3><p>内核态线程也称作内核级线程（Kernel Level Thread）。这种线程执行在内核态，可以通过系统调用创造一个内核级线程。</p>
+<p>内核级线程有很多<strong>优势</strong>：</p>
+<ul>
+<li><strong>可以利用多核 CPU 优势</strong>：内核拥有较高权限，因此可以在多个 CPU 核心上执行内核线程。</li>
+<li><strong>操作系统级优化</strong>：内核中的线程操作 I/O 不需要进行系统调用；一个内核线程阻塞了，可以立即让另一个执行。</li>
+</ul>
+<p>当然内核线程也有一些<strong>缺点</strong>：</p>
+<ul>
+<li><strong>创建成本高</strong>：创建的时候需要系统调用，也就是切换到内核态。</li>
+<li><strong>扩展性差</strong>：由一个内核程序管理，不可能数量太多。</li>
+<li><strong>切换成本较高</strong>：切换的时候，也同样存在需要内核操作，需要切换内核态。</li>
+</ul>
+<h3 id="区别"><a href="#区别" class="headerlink" title="区别"></a>区别</h3><p>用户态线程调度完全由<strong>进程</strong>负责，通常就是由进程的<strong>主线程</strong>负责。相当于进程主线程的延展，使用的是操作系统分配给进程主线程的时间片段。内核线程由<strong>内核维护</strong>，由操作系统调度。</p>
+<p>用户态线程无法跨核心，一个进程的多个用户态线程<strong>不能并发</strong>，<strong>阻塞一个用户态线程会导致进程的主线程阻塞，直接交出执行权限</strong>。这些都是用户态线程的劣势。<br><strong>内核线程可以独立执行，操作系统会分配<em>时间片段</em></strong>。因此内核态线程更完整，也称作轻量级进程。内核态线程创建成本高，切换成本高，创建太多还会给调度算法增加压力，因此不会太多。</p>
+<h3 id="线程调度的三种模型"><a href="#线程调度的三种模型" class="headerlink" title="线程调度的三种模型"></a>线程调度的三种模型</h3><p>实际操作中，往往结合两者优势，将用户态线程附着在内核态线程中执行。</p>
+<ul>
+<li><strong>N:1模型</strong><br><strong>多个用户空间线程在1个内核空间线程上运行</strong>。优势是<strong>上下文切换非常快</strong>，因为只有一个内核线程，用户线程的数据都在内核中，但是<strong>无法利用多核系统的优点</strong>。</li>
+</ul>
+<p><img src="/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3/%E5%A4%9A%E5%AF%B9%E4%B8%80.png" alt="多对一.png"></p>
+<ul>
+<li><strong>1:1模型</strong><br><strong>1个内核空间线程运行一个用户空间线程</strong>。这种<strong>充分利用了多核系统的优势</strong>但是<strong>上下文切换非常慢</strong>，因为每一次调度都会在用户态和内核态之间切换，而且用<strong>户线程数量受到限制</strong>。POSIX线程模型(pthread)就是这么做的。</li>
+</ul>
+<p><img src="/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3/%E4%B8%80%E5%AF%B9%E4%B8%80.png" alt="一对一.png"></p>
+<ul>
+<li><strong>M:N模型</strong><br><strong>内核开启多个内核线程，一个内核空间线程对应多个用户空间线程</strong>。效率非常高，但是管理复杂。</li>
+</ul>
+<p><img src="/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3/%E5%A4%9A%E5%AF%B9%E5%A4%9A.png" alt="多对多.png"></p>
+<h2 id="协程"><a href="#协程" class="headerlink" title="协程"></a>协程</h2><blockquote>
+<p>本文将以<code>golang</code>中的协程为例展开</p>
+</blockquote>
+<p>对于进程、线程，都是有内核进行调度，有CPU时间片的概念，进行<strong>抢占式调度</strong>。<br>协程，又称微线程，纤程。英文名Coroutine。协程的调用有点类似子程序，如程序A调用了子程序B，子程序B调用了子程序C，当子程序C结束了返回子程序B继续执行之后的逻辑，当子程序B运行结束了返回程序A，直到程序A运行结束。但是和子程序相比，<strong>协程有挂起的概念，协程可以挂起跳转执行其他协程，合适的时机再跳转回来</strong>。</p>
+<h3 id="go的协程调度原理"><a href="#go的协程调度原理" class="headerlink" title="go的协程调度原理"></a>go的协程调度原理</h3><p>go中的<code>goroutine</code>本质上就是协程，但是<strong>完全运行在用户态</strong>，借鉴了M:N模型。如下图<br><img src="/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3/gmp.jpg" alt="gmp.jpg"></p>
+<p>相比其他语言，golang采用了GMP模型管理协程，更加高效，但是管理非常复杂。</p>
+<ul>
+<li>M：指的是<code>Machine</code>,一个M直接关联了一个内核线程。由操作系统管理。</li>
+<li>G：指的是<code>goroutine</code>,其实本质上也是一种轻量级的线程。包括了<strong>调用栈</strong>，重要的<strong>调度信息</strong>，例如<code>channel</code>等。</li>
+<li>P：指的是<code>Processor</code>，代表了<code>M</code>所需的上下文环境，也是处理用户级代码逻辑的处理器，它负责衔接<code>M</code>和<code>G</code>的调度上下文，将等待执行的<code>G</code>与<code>M</code>对接。</li>
+</ul>
+<h3 id="G-M-P三者的关系与特点"><a href="#G-M-P三者的关系与特点" class="headerlink" title="G-M-P三者的关系与特点"></a>G-M-P三者的关系与特点</h3><ul>
+<li><code>P</code>的个数取决于设置的<code>GOMAXPROCS</code>,<strong><code>P</code>其实限定了<code>golang</code>调度其的最大并发度</strong>。go新版本默认使用最大内核数，比如你有8核处理器，那么P的数量就是8</li>
+<li><code>M</code>的数量和<code>P</code>不一定匹配，可以设置很多<code>M</code>，**<code>M</code>和<code>P</code>绑定后才可运行和对G进行调度**，多余的<code>M</code>处于休眠状态</li>
+<li><code>p</code>包含一个<strong>LRQ（Local Run Queue）本地运行队列</strong>，这里面保存着<strong>P需要执行的协程G的队列</strong><br>除了每个P自身保存的G的队列外，<strong>调度器还拥有一个全局的G队列GRQ（Global Run Queue）</strong>，这个队列存储的是<strong>所有未分配的协程G</strong>。</li>
+</ul>
+<p>单核主机下的协程运行图：<br><img src="/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3/2.jpg" alt="2.jpg"><br>红色部分表示挂起和休眠，黄色部分表示准备就绪等待运行，绿色部分表示正在运行。</p>
+<hr>
+<p>单核主机只有一个处理器P，但是系统初始化了两个线程M0和M1，处理器P优先绑定了M0线程，M1进入休眠状态。<br>P的LRQ队列里有G1,G2,G3等待处理。P目前正在处理G0,全局等待队列GRQ里保存着G4,G5，表示这两个协程还未分配给P。<br>如果G0在短时间内处理完，P就会从LRQ中取出G1继续处理。并且将GRQ全局队列中的部分协程加入LRQ中。<br><img src="/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3/3.jpg" alt="3.jpg"></p>
+<hr>
+<p>假设现在G1处理速度很慢，系统就会让M0线程休眠，挂起协程G1，唤醒线程M1进行处理其他的协程。这里M1会将M0未处理的协程取走处理。<br><img src="/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3/4.jpg" alt="4.jpg"></p>
+<hr>
+<p>等到M1协程队列中所有协程处理完再次唤醒M0，或者M1处理某个协程时间较长被挂起，M0也会被唤醒。</p>
+<hr>
+<p>上面的讨论是单核主机情况，如果是多核的，就会运行多个P和M，如图<br><img src="/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3/5.jpg" alt="5.jpg"></p>
+<p>M0和M1分别运行在不同的内核中，M0处理G1,G2,G3，M1处理G4,G5,G6。</p>
+<blockquote>
+<p><strong>有人会问，当M0处理完所有的协程，而M1还未处理完，系统会如何做呢？</strong><br>  M0会取走M1的一半数量未处理的协程。</p>
+</blockquote>
+<p>golang协程设计非常优秀，一方面极大的利用了内核线程和处理器资源，另一方面每个处理器的LRQ队列的<strong>协程都处于用户态，这些协程的处理和挂起操作都是用户态的，协程切换开销非常小</strong>。相比其他语言的线程设计，更加轻量和高效。</p>
+<h1 id="参考地址："><a href="#参考地址：" class="headerlink" title="参考地址："></a>参考地址：</h1><p><a href="https://www.cnblogs.com/shangxiaofei/p/5567776.html">多线程之：用户态和内核态的区别</a><br><a href="https://blog.csdn.net/m0_50654102/article/details/116065035">用户态线程和内核态线程有什么区别？</a><br><a href="https://www.jianshu.com/p/4afa0679851d">【深度知识】GO语言的goroutine并发原理和调度机制</a><br><a href="https://www.limerence2017.com/2019/11/05/golang17/">图解Go协程调度原理，小白都能理解</a></p>
+]]></content>
+      <categories>
+        <category>操作系统</category>
+      </categories>
+      <tags>
+        <tag>goroutine</tag>
+        <tag>用户态</tag>
+        <tag>内核态</tag>
+        <tag>线程</tag>
+        <tag>协程</tag>
+        <tag>golang</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>进程/线程、同步/异步、阻塞/非阻塞</title>
     <url>/2021/05/19/%E8%BF%9B%E7%A8%8B-%E7%BA%BF%E7%A8%8B%E3%80%81%E5%90%8C%E6%AD%A5-%E5%BC%82%E6%AD%A5%E3%80%81%E9%98%BB%E5%A1%9E-%E9%9D%9E%E9%98%BB%E5%A1%9E/</url>
     <content><![CDATA[<p>这篇文章我们将重点讨论 <strong>进程/线程、同步/异步、阻塞/非阻塞</strong>问题</p>
@@ -246,7 +363,7 @@
 </li>
 <li><p>另外，<strong>进程在执行过程中拥有独立的内存单元</strong>，而<strong>多个线程共享内存</strong>，从而极大地提高了程序的运行效率。</p>
 </li>
-<li><p>线程在执行过程中与进程还是有区别的。每个独立的进程有一个程序运行的入口、顺序执行序列和程序的出口。但是线程不能够独立执行，必须依存在应用程序中，由应用程序提供多个线程执行控制。</p>
+<li><p>线程在执行过程中与进程还是有区别的。每个独立的线程有一个程序运行的入口、顺序执行序列和程序的出口。但是线程不能够独立执行，必须依存在应用程序中，由应用程序提供多个线程执行控制。</p>
 </li>
 <li><p>从逻辑角度来看，<strong>多线程的意义在于一个应用程序中，有多个执行部分可以同时执行</strong>。但操作系统并没有将多个线程看做多个独立的应用，来实现进程的调度和管理以及资源分配。这就是进程和线程的重要区别。</p>
 </li>

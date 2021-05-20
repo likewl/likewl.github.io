@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.ico">
+  <link rel="mask-icon" href="/images/favicon.ico" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.likeyl.cn","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"valine","storage":true,"lazyload":false,"nav":null,"activeClass":"valine"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="之前一篇文章简单介绍了进程和线程，这篇文章我们将介绍一下线程和协程">
+<meta property="og:type" content="article">
+<meta property="og:title" content="线程&#x2F;协程详解">
+<meta property="og:url" content="https://www.likeyl.cn/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3/index.html">
+<meta property="og:site_name" content="like随笔">
+<meta property="og:description" content="之前一篇文章简单介绍了进程和线程，这篇文章我们将介绍一下线程和协程">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.likeyl.cn/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3/%E5%A4%9A%E5%AF%B9%E4%B8%80.png">
+<meta property="og:image" content="https://www.likeyl.cn/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3/%E4%B8%80%E5%AF%B9%E4%B8%80.png">
+<meta property="og:image" content="https://www.likeyl.cn/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3/%E5%A4%9A%E5%AF%B9%E5%A4%9A.png">
+<meta property="og:image" content="https://www.likeyl.cn/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3/gmp.jpg">
+<meta property="og:image" content="https://www.likeyl.cn/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3/2.jpg">
+<meta property="og:image" content="https://www.likeyl.cn/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3/3.jpg">
+<meta property="og:image" content="https://www.likeyl.cn/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3/4.jpg">
+<meta property="og:image" content="https://www.likeyl.cn/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3/5.jpg">
+<meta property="article:published_time" content="2021-05-20T06:33:54.000Z">
+<meta property="article:modified_time" content="2021-05-20T14:45:11.457Z">
+<meta property="article:author" content="like">
+<meta property="article:tag" content="goroutine">
+<meta property="article:tag" content="用户态">
+<meta property="article:tag" content="内核态">
+<meta property="article:tag" content="线程">
+<meta property="article:tag" content="协程">
+<meta property="article:tag" content="golang">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.likeyl.cn/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3/%E5%A4%9A%E5%AF%B9%E4%B8%80.png">
+
+<link rel="canonical" href="https://www.likeyl.cn/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>线程/协程详解 | like随笔</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">like随笔</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">记录点滴</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">18</span></a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">3</span></a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">6</span></a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.likeyl.cn/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/header.jpg">
+      <meta itemprop="name" content="like">
+      <meta itemprop="description" content="欲穷千里目，更上一层楼">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="like随笔">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          线程/协程详解
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2021-05-20 14:33:54 / 修改时间：22:45:11" itemprop="dateCreated datePublished" datetime="2021-05-20T14:33:54+08:00">2021-05-20</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">操作系统</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>之前一篇文章简单介绍了进程和线程，这篇文章我们将介绍一下线程和协程</p>
+<span id="more"></span>
+<p>在说这写概念之前，我们需要了解一下什么是<code>内核态</code>和<code>用户态</code></p>
+<h1 id="内核态-用户态"><a href="#内核态-用户态" class="headerlink" title="内核态/用户态"></a>内核态/用户态</h1><p>由于需要限制不同的程序之间的访问能力, 防止他们获取别的程序的内存数据, 或者获取外围设备的数据, 并发送到网络, CPU划分出两个权限等级 :<strong>用户态</strong> 和 <strong>内核态</strong></p>
+<ul>
+<li><strong>内核态</strong>: CPU可以访问内存所有数据, 包括外围设备, 例如硬盘, 网卡。CPU也可以将自己从一个程序切换到另一个程序</li>
+<li><strong>用户态</strong>: 只能受限的访问内存, 且不允许访问外围设备。 占用CPU的能力被剥夺, CPU资源可以被其他程序获取</li>
+</ul>
+<h2 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h2><p>用户空间中的代码被限制了只能使用一个局部的内存空间，我们说这些程序在<strong>用户态（User Mode）</strong> 执行。<br>内核空间中的代码可以访问所有内存，我们称这些程序在<strong>内核态（Kernal Mode）</strong> 执行。</p>
+<h2 id="如何切换"><a href="#如何切换" class="headerlink" title="如何切换"></a>如何切换</h2><p>所有用户程序都是运行在用户态的, 但是有时候程序确实需要做一些内核态的事情, 例如从硬盘读取数据, 或者从键盘获取输入等. 而唯一可以做这些事情的就是操作系统, 所以此时程序就需要先操作系统请求以程序的名义来执行这些操作.</p>
+<p>这时需要一个这样的机制: 用户态程序切换到内核态, 但是不能控制在内核态中执行的指令</p>
+<p>这种机制叫<strong>系统调用</strong>, 在CPU中的实现称之为<strong>陷阱指令(Trap Instruction)</strong></p>
+<p>他们的工作流程如下:</p>
+<ol>
+<li>用户态程序将一些数据值放在寄存器中, 或者使用参数创建一个堆栈(stack frame), 以此表明需要操作系统提供的服务.</li>
+<li>用户态程序执行陷阱指令</li>
+<li>CPU切换到内核态, 并跳到位于内存指定位置的指令, 这些指令是操作系统的一部分, 他们具有内存保护, 不可被用户态程序访问</li>
+<li>这些指令称之为陷阱(trap)或者系统调用处理器(system call handler). 他们会读取程序放入内存的数据参数, 并执行程序请求的服务</li>
+<li>系统调用完成后, 操作系统会重置CPU为用户态并返回系统调用的结果</li>
+</ol>
+<h3 id="切换方式"><a href="#切换方式" class="headerlink" title="切换方式"></a>切换方式</h3><ul>
+<li><p>系统调用<br>这是用户态进程主动要求切换到内核态的一种方式，用户态进程通过系统调用申请使用操作系统提供的服务程序完成工作。而系统调用的机制其核心还是使用了操作系统为用户特别开放的<strong>一个中断来实现</strong>，例如Linux的int 80h中断。</p>
+</li>
+<li><p>异常<br>当CPU在执行运行在用户态下的程序时，发生了某些事先不可知的异常，这时会触发由当前运行进程切换到处理此异常的内核相关程序中，也就转到了内核态，比如缺页异常。</p>
+</li>
+<li><p>外围设备的中断<br>当外围设备完成用户请求的操作后，会向CPU发出相应的中断信号，这时CPU会暂停执行下一条即将要执行的指令转而去执行与中断信号对应的处理程序，如果先前执行的指令是用户态下的程序，那么这个转换的过程自然也就发生了由用户态到内核态的切换。比如硬盘读写操作完成，系统会切换到硬盘读写的中断处理程序中执行后续操作等。</p>
+</li>
+</ul>
+<p>这3种方式是系统在运行时由用户态转到内核态的最主要方式，其中系统调用可以认为是用户进程主动发起的，异常和外围设备中断则是被动的。</p>
+<h1 id="线程-协程"><a href="#线程-协程" class="headerlink" title="线程/协程"></a>线程/协程</h1><h2 id="线程"><a href="#线程" class="headerlink" title="线程"></a>线程</h2><p>线程分为用户态线程和内核态线程</p>
+<h3 id="用户态线程"><a href="#用户态线程" class="headerlink" title="用户态线程"></a>用户态线程</h3><p>用户态线程也称作用户级线程（User Level Thread）。操作系统内核并不知道它的存在，它完全是在用户空间中创建。<br>用户级线程有很多<strong>优势</strong>：</p>
+<ul>
+<li><strong>管理开销小</strong>：创建、销毁不需要系统调用。</li>
+<li><strong>切换成本低</strong>：用户空间程序可以自己维护，不需要走操作系统调度。</li>
+</ul>
+<p>但是这种线程也有很多的<strong>缺点</strong>：</p>
+<ul>
+<li><strong>与内核协作成本高</strong>：比如这种线程完全是用户空间程序在管理，当它进行 I/O 的时候，无法利用到内核的优势，需要频繁进行用户态到内核态的切换。</li>
+<li><strong>线程间协作成本高</strong>：设想两个线程需要通信，通信需要 I/O，I/O 需要系统调用，因此用户态线程需要支付额外的系统调用成本。</li>
+<li><strong>无法利用多核优势</strong>(N:1模型中)：比如操作系统调度的仍然是这个线程所属的进程，所以无论每次一个进程有多少用户态的线程，都只能并发执行一个线程，因此一个进程的多个线程无法利用多核的优势。</li>
+<li><strong>操作系统无法针对线程调度进行优化</strong>：当一个进程的一个用户态线程阻塞（Block）了，操作系统无法及时发现和处理阻塞问题，它不会更换执行其他线程，从而造成资源浪费。</li>
+</ul>
+<h3 id="内核态线程"><a href="#内核态线程" class="headerlink" title="内核态线程"></a>内核态线程</h3><p>内核态线程也称作内核级线程（Kernel Level Thread）。这种线程执行在内核态，可以通过系统调用创造一个内核级线程。</p>
+<p>内核级线程有很多<strong>优势</strong>：</p>
+<ul>
+<li><strong>可以利用多核 CPU 优势</strong>：内核拥有较高权限，因此可以在多个 CPU 核心上执行内核线程。</li>
+<li><strong>操作系统级优化</strong>：内核中的线程操作 I/O 不需要进行系统调用；一个内核线程阻塞了，可以立即让另一个执行。</li>
+</ul>
+<p>当然内核线程也有一些<strong>缺点</strong>：</p>
+<ul>
+<li><strong>创建成本高</strong>：创建的时候需要系统调用，也就是切换到内核态。</li>
+<li><strong>扩展性差</strong>：由一个内核程序管理，不可能数量太多。</li>
+<li><strong>切换成本较高</strong>：切换的时候，也同样存在需要内核操作，需要切换内核态。</li>
+</ul>
+<h3 id="区别"><a href="#区别" class="headerlink" title="区别"></a>区别</h3><p>用户态线程调度完全由<strong>进程</strong>负责，通常就是由进程的<strong>主线程</strong>负责。相当于进程主线程的延展，使用的是操作系统分配给进程主线程的时间片段。内核线程由<strong>内核维护</strong>，由操作系统调度。</p>
+<p>用户态线程无法跨核心，一个进程的多个用户态线程<strong>不能并发</strong>，<strong>阻塞一个用户态线程会导致进程的主线程阻塞，直接交出执行权限</strong>。这些都是用户态线程的劣势。<br><strong>内核线程可以独立执行，操作系统会分配<em>时间片段</em></strong>。因此内核态线程更完整，也称作轻量级进程。内核态线程创建成本高，切换成本高，创建太多还会给调度算法增加压力，因此不会太多。</p>
+<h3 id="线程调度的三种模型"><a href="#线程调度的三种模型" class="headerlink" title="线程调度的三种模型"></a>线程调度的三种模型</h3><p>实际操作中，往往结合两者优势，将用户态线程附着在内核态线程中执行。</p>
+<ul>
+<li><strong>N:1模型</strong><br><strong>多个用户空间线程在1个内核空间线程上运行</strong>。优势是<strong>上下文切换非常快</strong>，因为只有一个内核线程，用户线程的数据都在内核中，但是<strong>无法利用多核系统的优点</strong>。</li>
+</ul>
+<p><img src="/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3/%E5%A4%9A%E5%AF%B9%E4%B8%80.png" alt="多对一.png"></p>
+<ul>
+<li><strong>1:1模型</strong><br><strong>1个内核空间线程运行一个用户空间线程</strong>。这种<strong>充分利用了多核系统的优势</strong>但是<strong>上下文切换非常慢</strong>，因为每一次调度都会在用户态和内核态之间切换，而且用<strong>户线程数量受到限制</strong>。POSIX线程模型(pthread)就是这么做的。</li>
+</ul>
+<p><img src="/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3/%E4%B8%80%E5%AF%B9%E4%B8%80.png" alt="一对一.png"></p>
+<ul>
+<li><strong>M:N模型</strong><br><strong>内核开启多个内核线程，一个内核空间线程对应多个用户空间线程</strong>。效率非常高，但是管理复杂。</li>
+</ul>
+<p><img src="/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3/%E5%A4%9A%E5%AF%B9%E5%A4%9A.png" alt="多对多.png"></p>
+<h2 id="协程"><a href="#协程" class="headerlink" title="协程"></a>协程</h2><blockquote>
+<p>本文将以<code>golang</code>中的协程为例展开</p>
+</blockquote>
+<p>对于进程、线程，都是有内核进行调度，有CPU时间片的概念，进行<strong>抢占式调度</strong>。<br>协程，又称微线程，纤程。英文名Coroutine。协程的调用有点类似子程序，如程序A调用了子程序B，子程序B调用了子程序C，当子程序C结束了返回子程序B继续执行之后的逻辑，当子程序B运行结束了返回程序A，直到程序A运行结束。但是和子程序相比，<strong>协程有挂起的概念，协程可以挂起跳转执行其他协程，合适的时机再跳转回来</strong>。</p>
+<h3 id="go的协程调度原理"><a href="#go的协程调度原理" class="headerlink" title="go的协程调度原理"></a>go的协程调度原理</h3><p>go中的<code>goroutine</code>本质上就是协程，但是<strong>完全运行在用户态</strong>，借鉴了M:N模型。如下图<br><img src="/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3/gmp.jpg" alt="gmp.jpg"></p>
+<p>相比其他语言，golang采用了GMP模型管理协程，更加高效，但是管理非常复杂。</p>
+<ul>
+<li>M：指的是<code>Machine</code>,一个M直接关联了一个内核线程。由操作系统管理。</li>
+<li>G：指的是<code>goroutine</code>,其实本质上也是一种轻量级的线程。包括了<strong>调用栈</strong>，重要的<strong>调度信息</strong>，例如<code>channel</code>等。</li>
+<li>P：指的是<code>Processor</code>，代表了<code>M</code>所需的上下文环境，也是处理用户级代码逻辑的处理器，它负责衔接<code>M</code>和<code>G</code>的调度上下文，将等待执行的<code>G</code>与<code>M</code>对接。</li>
+</ul>
+<h3 id="G-M-P三者的关系与特点"><a href="#G-M-P三者的关系与特点" class="headerlink" title="G-M-P三者的关系与特点"></a>G-M-P三者的关系与特点</h3><ul>
+<li><code>P</code>的个数取决于设置的<code>GOMAXPROCS</code>,<strong><code>P</code>其实限定了<code>golang</code>调度其的最大并发度</strong>。go新版本默认使用最大内核数，比如你有8核处理器，那么P的数量就是8</li>
+<li><code>M</code>的数量和<code>P</code>不一定匹配，可以设置很多<code>M</code>，**<code>M</code>和<code>P</code>绑定后才可运行和对G进行调度**，多余的<code>M</code>处于休眠状态</li>
+<li><code>p</code>包含一个<strong>LRQ（Local Run Queue）本地运行队列</strong>，这里面保存着<strong>P需要执行的协程G的队列</strong><br>除了每个P自身保存的G的队列外，<strong>调度器还拥有一个全局的G队列GRQ（Global Run Queue）</strong>，这个队列存储的是<strong>所有未分配的协程G</strong>。</li>
+</ul>
+<p>单核主机下的协程运行图：<br><img src="/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3/2.jpg" alt="2.jpg"><br>红色部分表示挂起和休眠，黄色部分表示准备就绪等待运行，绿色部分表示正在运行。</p>
+<hr>
+<p>单核主机只有一个处理器P，但是系统初始化了两个线程M0和M1，处理器P优先绑定了M0线程，M1进入休眠状态。<br>P的LRQ队列里有G1,G2,G3等待处理。P目前正在处理G0,全局等待队列GRQ里保存着G4,G5，表示这两个协程还未分配给P。<br>如果G0在短时间内处理完，P就会从LRQ中取出G1继续处理。并且将GRQ全局队列中的部分协程加入LRQ中。<br><img src="/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3/3.jpg" alt="3.jpg"></p>
+<hr>
+<p>假设现在G1处理速度很慢，系统就会让M0线程休眠，挂起协程G1，唤醒线程M1进行处理其他的协程。这里M1会将M0未处理的协程取走处理。<br><img src="/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3/4.jpg" alt="4.jpg"></p>
+<hr>
+<p>等到M1协程队列中所有协程处理完再次唤醒M0，或者M1处理某个协程时间较长被挂起，M0也会被唤醒。</p>
+<hr>
+<p>上面的讨论是单核主机情况，如果是多核的，就会运行多个P和M，如图<br><img src="/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3/5.jpg" alt="5.jpg"></p>
+<p>M0和M1分别运行在不同的内核中，M0处理G1,G2,G3，M1处理G4,G5,G6。</p>
+<blockquote>
+<p><strong>有人会问，当M0处理完所有的协程，而M1还未处理完，系统会如何做呢？</strong><br>  M0会取走M1的一半数量未处理的协程。</p>
+</blockquote>
+<p>golang协程设计非常优秀，一方面极大的利用了内核线程和处理器资源，另一方面每个处理器的LRQ队列的<strong>协程都处于用户态，这些协程的处理和挂起操作都是用户态的，协程切换开销非常小</strong>。相比其他语言的线程设计，更加轻量和高效。</p>
+<h1 id="参考地址："><a href="#参考地址：" class="headerlink" title="参考地址："></a>参考地址：</h1><p><a target="_blank" rel="noopener" href="https://www.cnblogs.com/shangxiaofei/p/5567776.html">多线程之：用户态和内核态的区别</a><br><a target="_blank" rel="noopener" href="https://blog.csdn.net/m0_50654102/article/details/116065035">用户态线程和内核态线程有什么区别？</a><br><a target="_blank" rel="noopener" href="https://www.jianshu.com/p/4afa0679851d">【深度知识】GO语言的goroutine并发原理和调度机制</a><br><a target="_blank" rel="noopener" href="https://www.limerence2017.com/2019/11/05/golang17/">图解Go协程调度原理，小白都能理解</a></p>
+
+    </div>
+
+    
+    
+    
+        <div class="reward-container">
+  <div>坚持原创技术分享，您的支持将鼓励我继续创作！</div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/images/wechatAppreciation.jpg" alt="like 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/images/alipayAppreciation.jpg" alt="like 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>like
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.likeyl.cn/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3/" title="线程&#x2F;协程详解">https://www.likeyl.cn/2021/05/20/线程-协程详解/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/goroutine/" rel="tag"><i class="fa fa-tag"></i> goroutine</a>
+              <a href="/tags/%E7%94%A8%E6%88%B7%E6%80%81/" rel="tag"><i class="fa fa-tag"></i> 用户态</a>
+              <a href="/tags/%E5%86%85%E6%A0%B8%E6%80%81/" rel="tag"><i class="fa fa-tag"></i> 内核态</a>
+              <a href="/tags/%E7%BA%BF%E7%A8%8B/" rel="tag"><i class="fa fa-tag"></i> 线程</a>
+              <a href="/tags/%E5%8D%8F%E7%A8%8B/" rel="tag"><i class="fa fa-tag"></i> 协程</a>
+              <a href="/tags/golang/" rel="tag"><i class="fa fa-tag"></i> golang</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/05/19/%E8%BF%9B%E7%A8%8B-%E7%BA%BF%E7%A8%8B%E3%80%81%E5%90%8C%E6%AD%A5-%E5%BC%82%E6%AD%A5%E3%80%81%E9%98%BB%E5%A1%9E-%E9%9D%9E%E9%98%BB%E5%A1%9E/" rel="prev" title="进程/线程、同步/异步、阻塞/非阻塞">
+      <i class="fa fa-chevron-left"></i> 进程/线程、同步/异步、阻塞/非阻塞
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%86%85%E6%A0%B8%E6%80%81-%E7%94%A8%E6%88%B7%E6%80%81"><span class="nav-number">1.</span> <span class="nav-text">内核态&#x2F;用户态</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E5%BF%B5"><span class="nav-number">1.1.</span> <span class="nav-text">概念</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E5%88%87%E6%8D%A2"><span class="nav-number">1.2.</span> <span class="nav-text">如何切换</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%87%E6%8D%A2%E6%96%B9%E5%BC%8F"><span class="nav-number">1.2.1.</span> <span class="nav-text">切换方式</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B"><span class="nav-number">2.</span> <span class="nav-text">线程&#x2F;协程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B"><span class="nav-number">2.1.</span> <span class="nav-text">线程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%A8%E6%88%B7%E6%80%81%E7%BA%BF%E7%A8%8B"><span class="nav-number">2.1.1.</span> <span class="nav-text">用户态线程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E6%A0%B8%E6%80%81%E7%BA%BF%E7%A8%8B"><span class="nav-number">2.1.2.</span> <span class="nav-text">内核态线程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8C%BA%E5%88%AB"><span class="nav-number">2.1.3.</span> <span class="nav-text">区别</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E8%B0%83%E5%BA%A6%E7%9A%84%E4%B8%89%E7%A7%8D%E6%A8%A1%E5%9E%8B"><span class="nav-number">2.1.4.</span> <span class="nav-text">线程调度的三种模型</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%8F%E7%A8%8B"><span class="nav-number">2.2.</span> <span class="nav-text">协程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#go%E7%9A%84%E5%8D%8F%E7%A8%8B%E8%B0%83%E5%BA%A6%E5%8E%9F%E7%90%86"><span class="nav-number">2.2.1.</span> <span class="nav-text">go的协程调度原理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#G-M-P%E4%B8%89%E8%80%85%E7%9A%84%E5%85%B3%E7%B3%BB%E4%B8%8E%E7%89%B9%E7%82%B9"><span class="nav-number">2.2.2.</span> <span class="nav-text">G-M-P三者的关系与特点</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E5%9C%B0%E5%9D%80%EF%BC%9A"><span class="nav-number">3.</span> <span class="nav-text">参考地址：</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="like"
+      src="/images/header.jpg">
+  <p class="site-author-name" itemprop="name">like</p>
+  <div class="site-description" itemprop="description">欲穷千里目，更上一层楼</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">6</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">18</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/likewl" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;likewl" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:535889315@qq.com" title="E-Mail → mailto:535889315@qq.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://weibo.com/1819879637" title="Weibo → https:&#x2F;&#x2F;weibo.com&#x2F;1819879637" rel="noopener" target="_blank"><i class="fab fa-weibo fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fas fa-blog"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">旧地址： <a target="_blank" rel="noopener" href="https://old.likeyl.cn/">old.likeyl.cn</a></span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">15 分钟</span>
+</div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'ryfcVcL4MG8AbmbItr011Gj6-9Nh9j0Va',
+      appKey     : 'LO9HGMjq2CfmAh91Oo2xIx3A',
+      placeholder: "请在此输入您的留言",
+      avatar     : 'wavatar',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : 'zh-cn' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : true,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>
