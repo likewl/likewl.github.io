@@ -118,7 +118,7 @@
 <li>可以由语言和框架层进行调度。</li>
 <li>更小的栈空间允许创建大量的实例。</li>
 </ul>
-<p>更多请看 →</p>
+<p>更多请看 →<a href="/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3">线程/协程详解</a></p>
 <h2 id="Goroutine-是异步执行的"><a href="#Goroutine-是异步执行的" class="headerlink" title="Goroutine 是异步执行的"></a>Goroutine 是异步执行的</h2><p>有的时候为了防止在结束 main 函数的时候结束掉<code>Goroutine</code>，所以需要同步等待，可以使用一下三种方式：</p>
 <ul>
 <li><p><strong>channel</strong></p>
