@@ -109,7 +109,7 @@
     <content><![CDATA[<p>go 实现的是 CSP (Communicating Sequential Process，通讯顺序进程) 模型</p>
 <span id="more"></span>
 
-<h1 id="CSP"><a href="#CSP" class="headerlink" title="CSP"></a>CSP</h1><p>CSP (Communicating Sequential Process，通讯顺序进程) 模型是上个世纪七十年代提出的,<strong>不同于传统的多线程通过共享内存来通信，CSP 讲究的是“_以通信的方式来共享内存_”</strong>。用于描述两个独立的并发实体通过**共享的通讯 channel(管道)**进行通信的并发模型。 CSP 中<code>channel</code>是第一类对象，它不关注发送消息的实体，而关注与发送消息时使用的<code>channel</code>。</p>
+<h1 id="CSP"><a href="#CSP" class="headerlink" title="CSP"></a>CSP</h1><p>CSP (Communicating Sequential Process，通讯顺序进程) 模型是上个世纪七十年代提出的,<strong>不同于传统的多线程通过共享内存来通信</strong>，<strong>CSP 讲究的是 <em>以通信的方式来共享内存</em></strong>。用于描述<strong>两个独立的并发实体通过共享的通讯 channel(管道)进行通信的并发模型</strong>。 CSP 中<code>channel</code>是第一类对象，它不关注发送消息的实体，而关注与发送消息时使用的<code>channel</code>。</p>
 <p>Golang 就是借用 CSP 模型的一些概念为之实现并发进行理论支持，其实从实际上出发，go 语言并没有完全实现了 CSP 模型的所有理论，仅仅是借用了 <code>process</code>和<code>channel</code>这两个概念。**<code>process</code>是在 go 语言上的表现就是 <code>goroutine</code> 是实际并发执行的实体<strong>，每个</strong>实体之间是通过<code>channel</code>通讯来实现数据共享**。</p>
 <h1 id="chanel"><a href="#chanel" class="headerlink" title="chanel"></a>chanel</h1><p>Golang 中<code>channel</code>是被单独创建并且可以在<code>goroutine</code>并发实体之间传递，它的通信模式类似于 <code>boss-worker</code> 模式的，<strong>一个实体通过将消息发送到<code>channel</code> 中，然后又监听这个 <code>channel</code> 的实体处理</strong>，两个实体之间是匿名的，这个就实现实体中间的解耦，其中 <code>channel</code> 是同步的,一个消息被发送到 <code>channel</code> 中，最终是一定要被另外的实体消费掉的，在实现原理上其实类似一个阻塞的消息队列。</p>
 <h1 id="goroutine"><a href="#goroutine" class="headerlink" title="goroutine"></a>goroutine</h1><p><code>Goroutine</code>是 Golang 实际并发执行的实体，它底层是使用协程(<code>coroutine</code>)实现并发，<code>coroutine</code>是一种运行在用户态的用户线程，类似于<code>greenthread</code>，go 底层选择使用<code>coroutine</code>的出发点是因为，它具有以下特点：</p>
