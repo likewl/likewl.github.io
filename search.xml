@@ -104,53 +104,6 @@
       </tags>
   </entry>
   <entry>
-    <title>go并发模型研究</title>
-    <url>/2021/05/19/go%E5%B9%B6%E5%8F%91%E6%A8%A1%E5%9E%8B/</url>
-    <content><![CDATA[<p>go 实现的是 CSP (Communicating Sequential Process，通讯顺序进程) 模型</p>
-<span id="more"></span>
-
-<h1 id="CSP"><a href="#CSP" class="headerlink" title="CSP"></a>CSP</h1><p>CSP (Communicating Sequential Process，通讯顺序进程) 模型是上个世纪七十年代提出的,<strong>不同于传统的多线程通过共享内存来通信</strong>，<strong>CSP 讲究的是 <em>以通信的方式来共享内存</em></strong>。用于描述<strong>两个独立的并发实体通过共享的通讯 channel(管道)进行通信的并发模型</strong>。 CSP 中<code>channel</code>是第一类对象，它不关注发送消息的实体，而关注与发送消息时使用的<code>channel</code>。</p>
-<p>Golang 就是借用 CSP 模型的一些概念为之实现并发进行理论支持，其实从实际上出发，go 语言并没有完全实现了 CSP 模型的所有理论，仅仅是借用了 <code>process</code>和<code>channel</code>这两个概念。**<code>process</code>是在 go 语言上的表现就是 <code>goroutine</code> 是实际并发执行的实体<strong>，每个</strong>实体之间是通过<code>channel</code>通讯来实现数据共享**。</p>
-<h1 id="chanel"><a href="#chanel" class="headerlink" title="chanel"></a>chanel</h1><p>Golang 中<code>channel</code>是被单独创建并且可以在<code>goroutine</code>并发实体之间传递，它的通信模式类似于 <code>boss-worker</code> 模式的，<strong>一个实体通过将消息发送到<code>channel</code> 中，然后又监听这个 <code>channel</code> 的实体处理</strong>，两个实体之间是匿名的，这个就实现实体中间的解耦，其中 <code>channel</code> 是同步的,一个消息被发送到 <code>channel</code> 中，最终是一定要被另外的实体消费掉的，在实现原理上其实类似一个阻塞的消息队列。</p>
-<h1 id="goroutine"><a href="#goroutine" class="headerlink" title="goroutine"></a>goroutine</h1><p><code>Goroutine</code>是 Golang 实际并发执行的实体，它底层是使用协程(<code>coroutine</code>)实现并发，<code>coroutine</code>是一种运行在用户态的用户线程，类似于<code>greenthread</code>，go 底层选择使用<code>coroutine</code>的出发点是因为，它具有以下特点：</p>
-<ul>
-<li>用户空间 避免了内核态和用户态的切换导致的成本。</li>
-<li>可以由语言和框架层进行调度。</li>
-<li>更小的栈空间允许创建大量的实例。</li>
-</ul>
-<p>更多请看 →<a href="/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3">线程/协程详解</a></p>
-<h2 id="Goroutine-是异步执行的"><a href="#Goroutine-是异步执行的" class="headerlink" title="Goroutine 是异步执行的"></a>Goroutine 是异步执行的</h2><p>有的时候为了防止在结束 main 函数的时候结束掉<code>Goroutine</code>，所以需要同步等待，可以使用一下三种方式：</p>
-<ul>
-<li><p><strong>channel</strong></p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line">ch := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">int</span>)    无缓冲的channel由于没有缓冲发送和接收需要同步.</span><br><span class="line">ch := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">int</span>, <span class="number">2</span>) 有缓冲channel不要求发送和接收操作同步.</span><br></pre></td></tr></table></figure>
-<p>例子：</p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"> <span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">ch := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">struct</span>&#123;&#125;)</span><br><span class="line"><span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123; fmt.Println(<span class="string">&quot;start working&quot;</span>)</span><br><span class="line">time.Sleep(time.Second * <span class="number">1</span>)</span><br><span class="line">ch &lt;- <span class="keyword">struct</span>&#123;&#125;&#123;&#125; &#125;()</span><br><span class="line">&lt;-ch <span class="comment">//会阻塞直到协程完成</span></span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure></li>
-<li><p><strong>sync.WaitGroup</strong></p>
-<blockquote>
-<p>在 sync 包中，提供了 WaitGroup ，它会等待它收集的所有 goroutine 任务全部完成。在 WaitGroup 里主要有三个方法:<br><strong>Add</strong>, 可以添加或减少 goroutine 的数量.<br><strong>Done</strong>, 相当于 Add(-1).<br><strong>Wait</strong>, 执行后会堵塞主线程，直到 WaitGroup 里的值减至 0.</p>
-</blockquote>
-<p>例子：</p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">var</span> wg sync.WaitGroup</span><br><span class="line">	<span class="keyword">var</span> urls = []<span class="keyword">string</span>&#123;<span class="string">&quot;http://www.golang.org/&quot;</span>, <span class="string">&quot;http://www.google.com/&quot;</span>,&#125;</span><br><span class="line">	<span class="keyword">for</span> _, url := <span class="keyword">range</span> urls &#123;</span><br><span class="line">		wg.Add(<span class="number">1</span>)</span><br><span class="line">		<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">(url <span class="keyword">string</span>)</span></span> &#123; <span class="keyword">defer</span> wg.Done()</span><br><span class="line">		http.Get(url) &#125;(url)</span><br><span class="line">	&#125;</span><br><span class="line">	wg.Wait()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
-<li><p><strong>context</strong></p>
-<blockquote>
-<p>context 包主要是用来处理多个 goroutine 之间共享数据，及多个 goroutine 的管理。context 包的核心是 struct Context，接口声明如下：</p>
-</blockquote>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// A Context carries a deadline, cancelation signal, and request-scoped values</span></span><br><span class="line"><span class="comment">// across API boundaries. Its methods are safe for simultaneous use by multiple</span></span><br><span class="line"><span class="comment">// goroutines.</span></span><br><span class="line"><span class="keyword">type</span> Context <span class="keyword">interface</span> &#123;</span><br><span class="line">	<span class="comment">// Done 返回一个只能接受数据的channel类型，当该context关闭或者超时时间到了的时候，</span></span><br><span class="line">	<span class="comment">//该channel就会有一个取消信号</span></span><br><span class="line">	Done() &lt;-<span class="keyword">chan</span> <span class="keyword">struct</span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Err 在Done() 之后，返回context 取消的原因。</span></span><br><span class="line">	Err() error</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Deadline 设置该context cancel的时间点</span></span><br><span class="line">	Deadline() (deadline time.Time, ok <span class="keyword">bool</span>)</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Value 允许 Context 对象携带request作用域的数据，该数据必须是线程安全的。</span></span><br><span class="line">	Value(key <span class="keyword">interface</span>&#123;&#125;) <span class="keyword">interface</span>&#123;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>Context 对象是线程安全的，你可以把一个 Context 对象传递给任意个数的 gorotuine，对它执行 取消 操作时，所有 goroutine 都会接收到取消信号。</p>
-</li>
-</ul>
-<h1 id="面试题"><a href="#面试题" class="headerlink" title="面试题"></a>面试题</h1><h2 id="双协程交替打印-1-10"><a href="#双协程交替打印-1-10" class="headerlink" title="双协程交替打印 1-10"></a>双协程交替打印 1-10</h2><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 双协程交替打印1-10</span></span><br><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> <span class="string">&quot;fmt&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	a := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">int</span>)</span><br><span class="line">	exit := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">bool</span>)</span><br><span class="line">	<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">		<span class="keyword">for</span> i := <span class="number">2</span>; i &lt;= <span class="number">10</span>; i += <span class="number">2</span> &#123;</span><br><span class="line">			fmt.Println(<span class="string">&quot;A:&quot;</span>, &lt;-a) <span class="comment">//等待打印</span></span><br><span class="line">			a &lt;- i                 <span class="comment">//传入，下面的协程接受</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;()</span><br><span class="line">	<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">		<span class="keyword">defer</span> <span class="built_in">close</span>(exit)</span><br><span class="line">		<span class="keyword">for</span> i := <span class="number">1</span>; i &lt;= <span class="number">9</span>; i += <span class="number">2</span> &#123;</span><br><span class="line">			a &lt;- i                 <span class="comment">//传入，上面的协程接受</span></span><br><span class="line">			fmt.Println(<span class="string">&quot;B:&quot;</span>, &lt;-a) <span class="comment">//等待打印</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;()</span><br><span class="line">	&lt;-exit</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-]]></content>
-      <categories>
-        <category>golang</category>
-      </categories>
-      <tags>
-        <tag>面试题</tag>
-        <tag>goroutine</tag>
-        <tag>go并发模型</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>动态规划算法思路</title>
     <url>/2021/05/16/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92%E7%AE%97%E6%B3%95%E6%80%9D%E8%B7%AF/</url>
     <content><![CDATA[<p>在这片文章中，我们总结了动态规划的基本思路，大致就分为三种</p>
@@ -204,6 +157,53 @@
       <tags>
         <tag>思路</tag>
         <tag>动态规划</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>go并发模型研究</title>
+    <url>/2021/05/19/go%E5%B9%B6%E5%8F%91%E6%A8%A1%E5%9E%8B/</url>
+    <content><![CDATA[<p>go 实现的是 CSP (Communicating Sequential Process，通讯顺序进程) 模型</p>
+<span id="more"></span>
+
+<h1 id="CSP"><a href="#CSP" class="headerlink" title="CSP"></a>CSP</h1><p>CSP (Communicating Sequential Process，通讯顺序进程) 模型是上个世纪七十年代提出的,<strong>不同于传统的多线程通过共享内存来通信</strong>，<strong>CSP 讲究的是 <em>以通信的方式来共享内存</em></strong>。用于描述<strong>两个独立的并发实体通过共享的通讯 channel(管道)进行通信的并发模型</strong>。 CSP 中<code>channel</code>是第一类对象，它不关注发送消息的实体，而关注与发送消息时使用的<code>channel</code>。</p>
+<p>Golang 就是借用 CSP 模型的一些概念为之实现并发进行理论支持，其实从实际上出发，go 语言并没有完全实现了 CSP 模型的所有理论，仅仅是借用了 <code>process</code>和<code>channel</code>这两个概念。**<code>process</code>是在 go 语言上的表现就是 <code>goroutine</code> 是实际并发执行的实体<strong>，每个</strong>实体之间是通过<code>channel</code>通讯来实现数据共享**。</p>
+<h1 id="chanel"><a href="#chanel" class="headerlink" title="chanel"></a>chanel</h1><p>Golang 中<code>channel</code>是被单独创建并且可以在<code>goroutine</code>并发实体之间传递，它的通信模式类似于 <code>boss-worker</code> 模式的，<strong>一个实体通过将消息发送到<code>channel</code> 中，然后又监听这个 <code>channel</code> 的实体处理</strong>，两个实体之间是匿名的，这个就实现实体中间的解耦，其中 <code>channel</code> 是同步的,一个消息被发送到 <code>channel</code> 中，最终是一定要被另外的实体消费掉的，在实现原理上其实类似一个阻塞的消息队列。</p>
+<h1 id="goroutine"><a href="#goroutine" class="headerlink" title="goroutine"></a>goroutine</h1><p><code>Goroutine</code>是 Golang 实际并发执行的实体，它底层是使用协程(<code>coroutine</code>)实现并发，<code>coroutine</code>是一种运行在用户态的用户线程，类似于<code>greenthread</code>，go 底层选择使用<code>coroutine</code>的出发点是因为，它具有以下特点：</p>
+<ul>
+<li>用户空间 避免了内核态和用户态的切换导致的成本。</li>
+<li>可以由语言和框架层进行调度。</li>
+<li>更小的栈空间允许创建大量的实例。</li>
+</ul>
+<p>更多请看 →<a href="/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3">线程/协程详解</a></p>
+<h2 id="Goroutine-是异步执行的"><a href="#Goroutine-是异步执行的" class="headerlink" title="Goroutine 是异步执行的"></a>Goroutine 是异步执行的</h2><p>有的时候为了防止在结束 main 函数的时候结束掉<code>Goroutine</code>，所以需要同步等待，可以使用一下三种方式：</p>
+<ul>
+<li><p><strong>channel</strong></p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line">ch := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">int</span>)    无缓冲的channel由于没有缓冲发送和接收需要同步.</span><br><span class="line">ch := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">int</span>, <span class="number">2</span>) 有缓冲channel不要求发送和接收操作同步.</span><br></pre></td></tr></table></figure>
+<p>例子：</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"> <span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">ch := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">struct</span>&#123;&#125;)</span><br><span class="line"><span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123; fmt.Println(<span class="string">&quot;start working&quot;</span>)</span><br><span class="line">time.Sleep(time.Second * <span class="number">1</span>)</span><br><span class="line">ch &lt;- <span class="keyword">struct</span>&#123;&#125;&#123;&#125; &#125;()</span><br><span class="line">&lt;-ch <span class="comment">//会阻塞直到协程完成</span></span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure></li>
+<li><p><strong>sync.WaitGroup</strong></p>
+<blockquote>
+<p>在 sync 包中，提供了 WaitGroup ，它会等待它收集的所有 goroutine 任务全部完成。在 WaitGroup 里主要有三个方法:<br><strong>Add</strong>, 可以添加或减少 goroutine 的数量.<br><strong>Done</strong>, 相当于 Add(-1).<br><strong>Wait</strong>, 执行后会堵塞主线程，直到 WaitGroup 里的值减至 0.</p>
+</blockquote>
+<p>例子：</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">var</span> wg sync.WaitGroup</span><br><span class="line">	<span class="keyword">var</span> urls = []<span class="keyword">string</span>&#123;<span class="string">&quot;http://www.golang.org/&quot;</span>, <span class="string">&quot;http://www.google.com/&quot;</span>,&#125;</span><br><span class="line">	<span class="keyword">for</span> _, url := <span class="keyword">range</span> urls &#123;</span><br><span class="line">		wg.Add(<span class="number">1</span>)</span><br><span class="line">		<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">(url <span class="keyword">string</span>)</span></span> &#123; <span class="keyword">defer</span> wg.Done()</span><br><span class="line">		http.Get(url) &#125;(url)</span><br><span class="line">	&#125;</span><br><span class="line">	wg.Wait()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li><p><strong>context</strong></p>
+<blockquote>
+<p>context 包主要是用来处理多个 goroutine 之间共享数据，及多个 goroutine 的管理。context 包的核心是 struct Context，接口声明如下：</p>
+</blockquote>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// A Context carries a deadline, cancelation signal, and request-scoped values</span></span><br><span class="line"><span class="comment">// across API boundaries. Its methods are safe for simultaneous use by multiple</span></span><br><span class="line"><span class="comment">// goroutines.</span></span><br><span class="line"><span class="keyword">type</span> Context <span class="keyword">interface</span> &#123;</span><br><span class="line">	<span class="comment">// Done 返回一个只能接受数据的channel类型，当该context关闭或者超时时间到了的时候，</span></span><br><span class="line">	<span class="comment">//该channel就会有一个取消信号</span></span><br><span class="line">	Done() &lt;-<span class="keyword">chan</span> <span class="keyword">struct</span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Err 在Done() 之后，返回context 取消的原因。</span></span><br><span class="line">	Err() error</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Deadline 设置该context cancel的时间点</span></span><br><span class="line">	Deadline() (deadline time.Time, ok <span class="keyword">bool</span>)</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Value 允许 Context 对象携带request作用域的数据，该数据必须是线程安全的。</span></span><br><span class="line">	Value(key <span class="keyword">interface</span>&#123;&#125;) <span class="keyword">interface</span>&#123;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Context 对象是线程安全的，你可以把一个 Context 对象传递给任意个数的 gorotuine，对它执行 取消 操作时，所有 goroutine 都会接收到取消信号。</p>
+</li>
+</ul>
+<h1 id="面试题"><a href="#面试题" class="headerlink" title="面试题"></a>面试题</h1><h2 id="双协程交替打印-1-10"><a href="#双协程交替打印-1-10" class="headerlink" title="双协程交替打印 1-10"></a>双协程交替打印 1-10</h2><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 双协程交替打印1-10</span></span><br><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> <span class="string">&quot;fmt&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	a := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">int</span>)</span><br><span class="line">	exit := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">bool</span>)</span><br><span class="line">	<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">		<span class="keyword">for</span> i := <span class="number">2</span>; i &lt;= <span class="number">10</span>; i += <span class="number">2</span> &#123;</span><br><span class="line">			fmt.Println(<span class="string">&quot;A:&quot;</span>, &lt;-a) <span class="comment">//等待打印</span></span><br><span class="line">			a &lt;- i                 <span class="comment">//传入，下面的协程接受</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;()</span><br><span class="line">	<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">		<span class="keyword">defer</span> <span class="built_in">close</span>(exit)</span><br><span class="line">		<span class="keyword">for</span> i := <span class="number">1</span>; i &lt;= <span class="number">9</span>; i += <span class="number">2</span> &#123;</span><br><span class="line">			a &lt;- i                 <span class="comment">//传入，上面的协程接受</span></span><br><span class="line">			fmt.Println(<span class="string">&quot;B:&quot;</span>, &lt;-a) <span class="comment">//等待打印</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;()</span><br><span class="line">	&lt;-exit</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+]]></content>
+      <categories>
+        <category>golang</category>
+      </categories>
+      <tags>
+        <tag>面试题</tag>
+        <tag>goroutine</tag>
+        <tag>go并发模型</tag>
       </tags>
   </entry>
   <entry>
