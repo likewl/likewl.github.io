@@ -177,7 +177,7 @@
 <p><img src="/2021/05/24/tcp%E7%9A%84%E4%B8%89%E6%AC%A1%E6%8F%A1%E6%89%8B%E5%92%8C%E5%9B%9B%E6%AC%A1%E6%8C%A5%E6%89%8B/%E4%B8%89%E6%AC%A1%E6%8F%A1%E6%89%8B.png" alt="三次握手"></p>
 <p><strong>注</strong>：由于第二次握手服务器会分配缓存和变量可能产生 SYN 洪宏攻击</p>
 <h1 id="四次挥手"><a href="#四次挥手" class="headerlink" title="四次挥手"></a>四次挥手</h1><p>咱们还是用男女聊天的问题来看一下 4 次挥手终止回话的情况<br><img src="/2021/05/24/tcp%E7%9A%84%E4%B8%89%E6%AC%A1%E6%8F%A1%E6%89%8B%E5%92%8C%E5%9B%9B%E6%AC%A1%E6%8C%A5%E6%89%8B/%E5%9B%9B%E6%AC%A1%E6%8C%A5%E6%89%8B%E6%83%85%E6%99%AF%E5%89%A7.png" alt="四次挥手情景剧"><br>接下来我们详细说明一下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">FIN: 结束位</span><br><span class="line">seq: 序号位（随机产生）</span><br><span class="line">ACK: 确认位</span><br><span class="line">ack: 确认号（期待下一次接收的序号，只有ACK=1时，ack才有用）</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">FIN: 结束位</span><br><span class="line">seq: 序号位</span><br><span class="line">ACK: 确认位</span><br><span class="line">ack: 确认号（期待下一次接收的序号，只有ACK=1时，ack才有用）</span><br></pre></td></tr></table></figure>
 
 <p>客户端和服务器双方都可以结束回话，本文以客户端先结束为例</p>
 <ul>
@@ -214,15 +214,16 @@
 <li><p><strong>关闭 TCP 连接一定需要 4 次挥手吗?</strong><br>不一定，4 次挥手关闭<code>TCP</code>连接是最安全的做法。但在有些时候，我们不喜欢 <code>TIME_WAIT</code> 状态(如当<code>MSL</code>数值设置过大导致服务器端有太多<code>TIME_WAIT</code>状态的 TCP 连接，减少这些条目数可以更快地关闭连接，为新连接释放更多资源)，这时我们可以通过设置 <code>SOCKET</code> 变量的 <code>SO_LINGER</code> 标志来避免 <code>SOCKET</code> 在 <code>close()</code>之后进入 <code>TIME_WAIT</code> 状态，这时将通过发送 <code>RST</code> 强制终止 TCP 连接(取代正常的 TCP 四次握手的终止方式)。但这并不是一个很好的主意,<code>TIME_WAIT</code>对于我们来说往往是有利的。</p>
 </li>
 <li><p><strong><code>accept()</code> <code>connect()</code> <code>listen()</code>对应三次握手什么阶段</strong></p>
-</li>
-</ol>
 <ul>
-<li><strong>客户端的 Connect() 函数</strong>：是一个阻塞函数,通过 TCp 三次握手与服务器建立连接<br><strong>客户端主动连接服务器</strong><br>建立连接方式通过 TCP 三次握手通知 Linux 内核自动完成 TCP 三次握手连接，如果连接成功为 <code>0</code> ，失败返回值<code>-1</code><br>一般的情况下,客户端的 <code>connect</code> 函数 默认是阻塞行为 直到三次握手阶段成功为止。</li>
-<li><strong>服务器端的 listen() 函数</strong>：不是一个阻塞函数,<br>功能：将<strong>套接字</strong> 和 <strong>套接字对应队列的长度</strong>告诉 <code>Linux</code> 内核<br>他是被动连接的,一直监听来自不同客户端的请求</li>
-<li><strong>服务器端的 listen() 函数</strong>:只要作用将 <code>socketfd</code> 变成被动的连接监听 <code>socket</code>，<br>其中参数 <code>backlog</code> 作用是设置内核中队列的长度。</li>
+<li><strong>客户端的 Connect() 函数</strong>：是一个阻塞函数,通过 TCp 三次握手与服务器建立连接，客户端主动连接服务器，建立连接方式通过 TCP 三次握手通知 Linux 内核自动完成 TCP 三次握手连接，如果连接成功为 <code>0</code> ，失败返回值<code>-1</code><br>一般的情况下,客户端的 <code>connect</code> 函数 默认是阻塞行为 直到三次握手阶段成功为止。</li>
+<li><strong>服务器端的 listen() 函数</strong>：不是一个阻塞函数,功能：将<strong>套接字</strong> 和 <strong>套接字对应队列的长度</strong>告诉 <code>Linux</code> 内核，他是被动连接的,一直监听来自不同客户端的请求</li>
+<li><strong>服务器端的 listen() 函数</strong>:只要作用将 <code>socketfd</code> 变成被动的连接监听 <code>socket</code>，其中参数 <code>backlog</code> 作用是设置内核中队列的长度。</li>
 <li><strong>客户端的 accept() 函数</strong>: 阻塞,从处于 <code>established</code> 状态的队列中取出完成的连接,当队列中没有完成连接时候会形成阻塞，直到取出队列中已完成连接的用户连接为止。</li>
 </ul>
-<p><strong>问题：服务器没有及时调用 accept 函数取走完成连接的队列怎么办？</strong><br>  服务器的连接队列满掉后，服务器不会对再对建立新连接的 <code>syn</code> 进行应答，所以客户端的 <code>connect</code> 就会返回 <code>ETIMEDOUT</code>。但实际上 Linux 的并不是这样的 当 TCP 连接队列满了之后 Linux 并不会书中所说的拒绝连接，只是会延时连接。</p>
+</li>
+<li><p><strong>服务器没有及时调用 accept 函数取走完成连接的队列怎么办？</strong><br>服务器的连接队列满掉后，服务器不会对再对建立新连接的 <code>syn</code> 进行应答，所以客户端的 <code>connect</code> 就会返回 <code>ETIMEDOUT</code>。但实际上 Linux 的并不是这样的 当 TCP 连接队列满了之后 Linux 并不会书中所说的拒绝连接，只是会延时连接。</p>
+</li>
+</ol>
 <h1 id="参考地址"><a href="#参考地址" class="headerlink" title="参考地址"></a>参考地址</h1><ol>
 <li><a href="https://juejin.cn/post/6965761651588988942#heading-19">字节跳动 Java 岗一二三面全经过分享</a></li>
 </ol>
@@ -233,58 +234,6 @@
       <tags>
         <tag>面试题</tag>
         <tag>tcp</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>文件描述符/文件表项</title>
-    <url>/2021/05/18/%E6%96%87%E4%BB%B6%E6%8F%8F%E8%BF%B0%E7%AC%A6-%E6%96%87%E4%BB%B6%E8%A1%A8%E9%A1%B9/</url>
-    <content><![CDATA[<p>从Linux的层次角度来说，在用户空间是存在这样的概念的，这个概念是存在内核空间的，而且是针对打开的文件的！</p>
-<span id="more"></span>
-
-<h1 id="进程表"><a href="#进程表" class="headerlink" title="进程表"></a>进程表</h1><p>也称进程控制块PCB，由结构<code>task_struct</code>所定义的数据结构。<code>task_struct</code>结构体专门用于存放进程在运行过程中，所涉及到的所有与进程相关的信息。这个结构体的成员项非常多，多达近300个。其中，文件描述符表就被包含在了<code>task_struct</code>结构体当中。在进程运行结束后，进程表所占用的内存空间，会被释放。</p>
-<p>打开一个文件的内核数据结构图</p>
-<p><img src="/2021/05/18/%E6%96%87%E4%BB%B6%E6%8F%8F%E8%BF%B0%E7%AC%A6-%E6%96%87%E4%BB%B6%E8%A1%A8%E9%A1%B9/%E8%BF%9B%E7%A8%8B%E8%A1%A8.jpg" alt="关系图"></p>
-<h1 id="三种数据结构"><a href="#三种数据结构" class="headerlink" title="三种数据结构"></a>三种数据结构</h1><blockquote>
-<p>从Linux的层次角度来说，在用户空间是存在这样的概念的，这个概念是存在内核空间的，而且是针对打开的文件的！<br>内核用三种数据结构来描述一个打开的文件。</p>
-</blockquote>
-<h2 id="文件描述符表："><a href="#文件描述符表：" class="headerlink" title="文件描述符表："></a>文件描述符表：</h2><p><code>open</code>打开文件后，会在进程的<code>task_struct</code>结构体中，创建相应的结构体，用以存放打开文件的相关信息。对文件进行读写等操作时，会用到这些信息，这个数据结构就是我们要讲的<code>文件描述符表</code>。<br>每个进程都有它独立的描述符表，它的表项是由进程打开的文件描述符来索引的。每个打开的文件描述符表项指向<code>文件表</code>中的一个表项。</p>
-<h2 id="文件表"><a href="#文件表" class="headerlink" title="文件表"></a>文件表</h2><p>所有”打开的文件”的集合!<br>每个磁盘文件在打开时都会在内核中建立一个<strong>文件表项</strong>，内核为所有打开文件维持一张文件表。<br>每个<strong>文件表项</strong>包括：</p>
-<ul>
-<li>文件状态标志：读、写、添写、同步、非阻塞等</li>
-<li>当前文件偏移量</li>
-<li>指向该文件v节点表项的指针</li>
-</ul>
-<h3 id="文件状态标志"><a href="#文件状态标志" class="headerlink" title="文件状态标志"></a>文件状态标志</h3><p>文件状态标志就是open文件时指定的<code>O_RDONLY</code>、<code>O_WRONLY</code>、<code>O_RDWR</code>等操作权限。open打开文件成功后，就会将文件状态标志保存到文件表中。在对文件执行操作时，会先检查文件状态标志，看看有没有操作权限，然后再去操作文件。</p>
-<h3 id="文件偏移量"><a href="#文件偏移量" class="headerlink" title="文件偏移量"></a>文件偏移量</h3><p>文件当前读写位置与文件开始位置的距离（字节数）。</p>
-<h3 id="函数指针"><a href="#函数指针" class="headerlink" title="函数指针"></a>函数指针</h3><p>在<code>read</code>、<code>write</code>等操作文件时，会根据底层具体情况的不同，调用不同的函数来实现读写。在V节点里面保存了这些不同函数的函数指针，方便调用。</p>
-<h2 id="v-node"><a href="#v-node" class="headerlink" title="v-node"></a>v-node</h2><p><code>v-node</code> 在(<code>v-node table</code>) 。同文件表一样，所有的进程共享这张<code>v-node表</code>。<br>每个打开文件(或设备)都有个v节点结构。<br>v节点包含：</p>
-<ul>
-<li>文件类型</li>
-<li>对此文件进行各种操作的函数指针。 </li>
-</ul>
-<p>对于大多数文件，v节点还包含了该文件的i节点（索引节点）。</p>
-<p>i节点包含：</p>
-<ul>
-<li>文件的所有者</li>
-<li>文件长度</li>
-<li>文件所在设备</li>
-<li>指向文件实际在磁盘上所在位置的指针。</li>
-</ul>
-<h3 id="文件长度"><a href="#文件长度" class="headerlink" title="文件长度"></a>文件长度</h3><p>记录了文件当前的长度，文件长度是动态更新的。</p>
-<p><strong>注</strong>：</p>
-<ol>
-<li>在文件表或者v索引节点中都有索引计数 (即当前指向该表项的描述符表项数)，引用计数为0的时候就可以收回此表项</li>
-<li>fork后父子进程各自的每一个打开的文件描述符共享同一个文件表项</li>
-</ol>
-<p>参考地址：<br><a href="http://emb.hqyj.com/Column/4458.html">什么是＂文件表项＂</a><br><a href="https://zhuanlan.zhihu.com/p/56251739">进程表和文件描述表</a><br><a href="https://www.cnblogs.com/tianzeng/p/11037229.html">文件描述符标志/文件表项</a></p>
-]]></content>
-      <categories>
-        <category>操作系统</category>
-      </categories>
-      <tags>
-        <tag>文件描述符</tag>
-        <tag>文件表项</tag>
-        <tag>linux</tag>
       </tags>
   </entry>
   <entry>
@@ -341,6 +290,58 @@
       <tags>
         <tag>思路</tag>
         <tag>动态规划</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>文件描述符/文件表项</title>
+    <url>/2021/05/18/%E6%96%87%E4%BB%B6%E6%8F%8F%E8%BF%B0%E7%AC%A6-%E6%96%87%E4%BB%B6%E8%A1%A8%E9%A1%B9/</url>
+    <content><![CDATA[<p>从Linux的层次角度来说，在用户空间是存在这样的概念的，这个概念是存在内核空间的，而且是针对打开的文件的！</p>
+<span id="more"></span>
+
+<h1 id="进程表"><a href="#进程表" class="headerlink" title="进程表"></a>进程表</h1><p>也称进程控制块PCB，由结构<code>task_struct</code>所定义的数据结构。<code>task_struct</code>结构体专门用于存放进程在运行过程中，所涉及到的所有与进程相关的信息。这个结构体的成员项非常多，多达近300个。其中，文件描述符表就被包含在了<code>task_struct</code>结构体当中。在进程运行结束后，进程表所占用的内存空间，会被释放。</p>
+<p>打开一个文件的内核数据结构图</p>
+<p><img src="/2021/05/18/%E6%96%87%E4%BB%B6%E6%8F%8F%E8%BF%B0%E7%AC%A6-%E6%96%87%E4%BB%B6%E8%A1%A8%E9%A1%B9/%E8%BF%9B%E7%A8%8B%E8%A1%A8.jpg" alt="关系图"></p>
+<h1 id="三种数据结构"><a href="#三种数据结构" class="headerlink" title="三种数据结构"></a>三种数据结构</h1><blockquote>
+<p>从Linux的层次角度来说，在用户空间是存在这样的概念的，这个概念是存在内核空间的，而且是针对打开的文件的！<br>内核用三种数据结构来描述一个打开的文件。</p>
+</blockquote>
+<h2 id="文件描述符表："><a href="#文件描述符表：" class="headerlink" title="文件描述符表："></a>文件描述符表：</h2><p><code>open</code>打开文件后，会在进程的<code>task_struct</code>结构体中，创建相应的结构体，用以存放打开文件的相关信息。对文件进行读写等操作时，会用到这些信息，这个数据结构就是我们要讲的<code>文件描述符表</code>。<br>每个进程都有它独立的描述符表，它的表项是由进程打开的文件描述符来索引的。每个打开的文件描述符表项指向<code>文件表</code>中的一个表项。</p>
+<h2 id="文件表"><a href="#文件表" class="headerlink" title="文件表"></a>文件表</h2><p>所有”打开的文件”的集合!<br>每个磁盘文件在打开时都会在内核中建立一个<strong>文件表项</strong>，内核为所有打开文件维持一张文件表。<br>每个<strong>文件表项</strong>包括：</p>
+<ul>
+<li>文件状态标志：读、写、添写、同步、非阻塞等</li>
+<li>当前文件偏移量</li>
+<li>指向该文件v节点表项的指针</li>
+</ul>
+<h3 id="文件状态标志"><a href="#文件状态标志" class="headerlink" title="文件状态标志"></a>文件状态标志</h3><p>文件状态标志就是open文件时指定的<code>O_RDONLY</code>、<code>O_WRONLY</code>、<code>O_RDWR</code>等操作权限。open打开文件成功后，就会将文件状态标志保存到文件表中。在对文件执行操作时，会先检查文件状态标志，看看有没有操作权限，然后再去操作文件。</p>
+<h3 id="文件偏移量"><a href="#文件偏移量" class="headerlink" title="文件偏移量"></a>文件偏移量</h3><p>文件当前读写位置与文件开始位置的距离（字节数）。</p>
+<h3 id="函数指针"><a href="#函数指针" class="headerlink" title="函数指针"></a>函数指针</h3><p>在<code>read</code>、<code>write</code>等操作文件时，会根据底层具体情况的不同，调用不同的函数来实现读写。在V节点里面保存了这些不同函数的函数指针，方便调用。</p>
+<h2 id="v-node"><a href="#v-node" class="headerlink" title="v-node"></a>v-node</h2><p><code>v-node</code> 在(<code>v-node table</code>) 。同文件表一样，所有的进程共享这张<code>v-node表</code>。<br>每个打开文件(或设备)都有个v节点结构。<br>v节点包含：</p>
+<ul>
+<li>文件类型</li>
+<li>对此文件进行各种操作的函数指针。 </li>
+</ul>
+<p>对于大多数文件，v节点还包含了该文件的i节点（索引节点）。</p>
+<p>i节点包含：</p>
+<ul>
+<li>文件的所有者</li>
+<li>文件长度</li>
+<li>文件所在设备</li>
+<li>指向文件实际在磁盘上所在位置的指针。</li>
+</ul>
+<h3 id="文件长度"><a href="#文件长度" class="headerlink" title="文件长度"></a>文件长度</h3><p>记录了文件当前的长度，文件长度是动态更新的。</p>
+<p><strong>注</strong>：</p>
+<ol>
+<li>在文件表或者v索引节点中都有索引计数 (即当前指向该表项的描述符表项数)，引用计数为0的时候就可以收回此表项</li>
+<li>fork后父子进程各自的每一个打开的文件描述符共享同一个文件表项</li>
+</ol>
+<p>参考地址：<br><a href="http://emb.hqyj.com/Column/4458.html">什么是＂文件表项＂</a><br><a href="https://zhuanlan.zhihu.com/p/56251739">进程表和文件描述表</a><br><a href="https://www.cnblogs.com/tianzeng/p/11037229.html">文件描述符标志/文件表项</a></p>
+]]></content>
+      <categories>
+        <category>操作系统</category>
+      </categories>
+      <tags>
+        <tag>文件描述符</tag>
+        <tag>文件表项</tag>
+        <tag>linux</tag>
       </tags>
   </entry>
   <entry>
