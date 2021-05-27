@@ -345,108 +345,17 @@
       </tags>
   </entry>
   <entry>
-    <title>进程/线程、同步/异步、阻塞/非阻塞</title>
-    <url>/2021/05/19/%E8%BF%9B%E7%A8%8B-%E7%BA%BF%E7%A8%8B%E3%80%81%E5%90%8C%E6%AD%A5-%E5%BC%82%E6%AD%A5%E3%80%81%E9%98%BB%E5%A1%9E-%E9%9D%9E%E9%98%BB%E5%A1%9E/</url>
-    <content><![CDATA[<p>这篇文章我们将重点讨论 <strong>进程/线程、同步/异步、阻塞/非阻塞</strong>问题</p>
-<span id="more"></span>
-
-<h1 id="进程、线程"><a href="#进程、线程" class="headerlink" title="进程、线程"></a>进程、线程</h1><h2 id="进程"><a href="#进程" class="headerlink" title="进程"></a>进程</h2><p>Windows系统中的一个基本概念，它包含着一个运行程序所需要的资源，<strong>进程可以包括一个或多个线程</strong>。</p>
-<h2 id="线程"><a href="#线程" class="headerlink" title="线程"></a>线程</h2><p><strong>进程中的基本执行单元，是操作系统分配CPU时间的基本单位，一个进程可以包含若干个线程，在进程入口执行的第一个线程被视为这个进程的主线程。</strong></p>
-<p>线程主要是由CPU寄存器、调用栈和线程本地存储器（Thread Local Storage，TLS）组成的。</p>
-<ul>
-<li><strong>CPU寄存器</strong>主要记录当前所执行线程的状态</li>
-<li><strong>调用栈</strong>主要用于维护线程所调用到的内存与数据</li>
-<li><strong>TLS</strong>主要用于存放线程的状态信息。</li>
-</ul>
-<h2 id="进程和线程的区别"><a href="#进程和线程的区别" class="headerlink" title="进程和线程的区别"></a>进程和线程的区别</h2><p><strong>进程和线程的主要差别在于它们是不同的操作系统资源管理方式</strong>。进程有独立的地址空间，一个进程崩溃后，在保护模式下不会对其它进程产生影响，而线程只是一个进程中的不同执行路径。<strong>线程有自己的堆栈和局部变量，但线程之间没有单独的地址空间</strong>，一个线程死掉就等于整个进程死掉，所以多进程的程序要比多线程的程序健壮，但在进程切换时，耗费资源较大，效率要差一些。但对于一些要求同时进行并且又要共享某些变量的并发操作，只能用线程，不能用进程。</p>
-<ol>
-<li><p>简而言之,一个程序至少有一个进程,一个进程至少有一个线程.</p>
-</li>
-<li><p>线程的划分尺度小于进程，使得多线程程序的并发性高。</p>
-</li>
-<li><p>另外，<strong>进程在执行过程中拥有独立的内存单元</strong>，而<strong>多个线程共享内存</strong>，从而极大地提高了程序的运行效率。</p>
-</li>
-<li><p>线程在执行过程中与进程还是有区别的。每个独立的线程有一个程序运行的入口、顺序执行序列和程序的出口。但是线程不能够独立执行，必须依存在应用程序中，由应用程序提供多个线程执行控制。</p>
-</li>
-<li><p>从逻辑角度来看，<strong>多线程的意义在于一个应用程序中，有多个执行部分可以同时执行</strong>。但操作系统并没有将多个线程看做多个独立的应用，来实现进程的调度和管理以及资源分配。这就是进程和线程的重要区别。</p>
-</li>
-</ol>
-<h1 id="同步（Sync）和异步（Async）"><a href="#同步（Sync）和异步（Async）" class="headerlink" title="同步（Sync）和异步（Async）"></a>同步（Sync）和异步（Async）</h1><h2 id="同步"><a href="#同步" class="headerlink" title="同步"></a>同步</h2><p>所谓同步，就是发出一个功能调用时，在没有得到结果之前，该调用就不返回或继续执行后续操作。</p>
-<h2 id="异步"><a href="#异步" class="headerlink" title="异步"></a>异步</h2><p>异步与同步相对，当一个异步过程调用发出后，<strong>调用者在没有得到结果之前，就可以继续执行后续操作</strong>。当这个调用完成后，<strong>一般通过状态、通知和回调来通知调用者</strong>。对于异步调用，调用的返回并不受调用者控制。</p>
-<p>对于通知调用者的三种方式，具体如下：</p>
-<ul>
-<li><p>状态</p>
-<p>即<strong>监听被调用者的状态（轮询）</strong>，调用者需要每隔一定时间检查一次，效率会很低。</p>
-</li>
-<li><p>通知</p>
-<p>当被调用者执行完成后，<strong>发出通知告知调用者</strong>，无需消耗太多性能。</p>
-</li>
-<li><p>回调</p>
-<p>与通知类似，当被调用者执行完成后，会<strong>调用调用者提供的回调函数</strong>。</p>
-</li>
-</ul>
-<h2 id="JavaScript中的异步"><a href="#JavaScript中的异步" class="headerlink" title="JavaScript中的异步"></a>JavaScript中的异步</h2><p>众所周知，js语言的一大特点就是单线程，那么它的异步是怎么实现的呢？</p>
-<h3 id="任务队列"><a href="#任务队列" class="headerlink" title="任务队列"></a>任务队列</h3><p>js中IO设备（输入输出设备）很慢(如Ajax操作从网络读取数据)，不得不等着结果出来，再往下执行。<br>JavaScript语言的设计者意识到，这时主线程完全可以不管IO设备，<strong>挂起处于等待中的任务，先运行排在后面的任务</strong>。等到IO设备返回了结果，再回过头，把挂起的任务继续执行下去。<br>于是，所有任务可以分成两种，</p>
-<ul>
-<li>一种是<strong>同步任务（synchronous）</strong><br>同步任务指的是，在主线程上排队执行的任务，只有前一个任务执行完毕，才能执行后一个任务</li>
-<li>另一种是<strong>异步任务（asynchronous）</strong><br>异步任务指的是，不进入主线程，而进入”任务队列”（task queue）的任务，只有”任务队列”通知主线程，某个异步任务可以执行了，该任务才会进入主线程执行。</li>
-</ul>
-<p>具体来说，异步执行的运行机制如下。（同步执行也是如此，因为它可以被视为没有异步任务的异步执行。）</p>
-<ol>
-<li>所有同步任务都在主线程上执行，形成一个<strong>执行栈（execution context stack）</strong>。</li>
-<li>主线程之外，还存在一个”<strong>任务队列”（task queue）</strong>。只要异步任务有了运行结果，就在”任务队列”之中放置一个事件。</li>
-<li>一旦”<strong>执行栈</strong>“中的所有同步任务执行完毕，系统就会读取”任务队列”，看看里面有哪些事件。那些对应的异步任务，于是结束等待状态，进入执行栈，开始执行。</li>
-<li>主线程不断重复上面的第三步。</li>
-</ol>
-<p><img src="/2021/05/19/%E8%BF%9B%E7%A8%8B-%E7%BA%BF%E7%A8%8B%E3%80%81%E5%90%8C%E6%AD%A5-%E5%BC%82%E6%AD%A5%E3%80%81%E9%98%BB%E5%A1%9E-%E9%9D%9E%E9%98%BB%E5%A1%9E/%E5%BC%82%E6%AD%A5%E6%89%A7%E8%A1%8C%E8%BF%87%E7%A8%8B.jpg" alt="异步执行过程.jpg"><br>只要主线程空了，就会去读取”任务队列”，这就是js的运行机制。这个过程会不断重复。</p>
-<h3 id="事件和回调函数"><a href="#事件和回调函数" class="headerlink" title="事件和回调函数"></a>事件和回调函数</h3><h4 id="事件"><a href="#事件" class="headerlink" title="事件"></a>事件</h4><p>一个事件的队列（也可以理解成消息的队列），IO设备完成一项任务，就在”任务队列”中添加一个事件，表示相关的异步任务可以进入”执行栈”了。主线程读取”任务队列”，就是读取里面有哪些事件。</p>
-<p>“任务队列”中的事件，除了IO设备的事件以外，还包括一些用户产生的事件（比如鼠标点击、页面滚动等等）。只要指定过回调函数，这些事件发生时就会进入”任务队列”，等待主线程读取。</p>
-<h4 id="回调函数（callback）"><a href="#回调函数（callback）" class="headerlink" title="回调函数（callback）"></a>回调函数（callback）</h4><p>那些会被主线程挂起来的代码。异步任务必须指定回调函数，当<strong>主线程开始执行异步任务，就是执行对应的回调函数</strong>。</p>
-<h3 id="Event-Loop"><a href="#Event-Loop" class="headerlink" title="Event Loop"></a>Event Loop</h3><p>主线程从”任务队列”中读取事件，这个过程是循环不断的，所以整个的这种运行机制又称为Event Loop（事件循环）。</p>
-<p><img src="/2021/05/19/%E8%BF%9B%E7%A8%8B-%E7%BA%BF%E7%A8%8B%E3%80%81%E5%90%8C%E6%AD%A5-%E5%BC%82%E6%AD%A5%E3%80%81%E9%98%BB%E5%A1%9E-%E9%9D%9E%E9%98%BB%E5%A1%9E/evenloop.png" alt="evenloop"></p>
-<p>上图中，主线程运行的时候，产生堆（heap）和栈（stack），栈中的代码调用各种<strong>外部API</strong>，它们<strong>在”任务队列”中加入各种事件</strong>（click，load，done）。只要栈中的代码执行完毕，主线程就会去<strong>读取”任务队列”<strong>，</strong>依次执行那些事件所对应的回调函数</strong>。</p>
-<p>执行栈中的代码（同步任务），总是在读取”任务队列”（异步任务）之前执行。请看下面这个例子。</p>
-<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="keyword">var</span> req = <span class="keyword">new</span> XMLHttpRequest();</span><br><span class="line">req.open(<span class="string">&#x27;GET&#x27;</span>, url);    </span><br><span class="line">req.onload = <span class="function"><span class="keyword">function</span> (<span class="params"></span>)</span>&#123;&#125;;    </span><br><span class="line">req.onerror = <span class="function"><span class="keyword">function</span> (<span class="params"></span>)</span>&#123;&#125;;    </span><br><span class="line">req.send();</span><br></pre></td></tr></table></figure>
-
-<p>上面代码中的<code>req.send</code>方法是Ajax操作向服务器发送数据，它是一个异步任务，意味着只有当前脚本的所有代码执行完，系统才会去读取”任务队列”。所以，它与下面的写法等价。</p>
-<pre><code class="js">var req = new XMLHttpRequest();
-req.open(&#39;GET&#39;, url);    
-req.send();
-req.onload = function ()&#123;&#125;;    
-req.onerror = function ()&#123;&#125;;    
-</code></pre>
-<p>也就是说，指定回调函数的部分（onload和onerror），在send()方法的前面或后面无关紧要，因为它们属于执行栈的一部分，系统总是执行完它们，才会去读取”任务队列”。</p>
-<h2 id="同步和异步的区别"><a href="#同步和异步的区别" class="headerlink" title="同步和异步的区别"></a>同步和异步的区别</h2><p>请求发出后，是否需要等待结果，才能继续执行其他操作。</p>
-<h1 id="阻塞和非阻塞"><a href="#阻塞和非阻塞" class="headerlink" title="阻塞和非阻塞"></a>阻塞和非阻塞</h1><p>阻塞和非阻塞这两个概念与<strong>程序（线程）等待消息通知(无所谓同步或者异步)时的状态有关</strong>。</p>
-<p>阻塞和非阻塞关注的是<strong>程序在等待调用结果（消息，返回值）时的状态.</strong></p>
-<p>阻塞调用是指调用结果返回之前，<strong>当前线程会被挂起</strong>。调用线程只有在得到结果之后才会返回。</p>
-<p>非阻塞调用指在不能立刻得到结果之前，<strong>直接返回结果</strong>，使该调用不会阻塞当前线程。</p>
-<p><strong>同步/异步 关注的是消息通知的机制</strong></p>
-<p><strong>阻塞/非阻塞 关注的是程序（线程）等待消息通知时的状态。</strong></p>
-<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><ol>
-<li><a href="https://www.cnblogs.com/mhq-martin/p/9035640.html">15分钟读懂进程线程、同步异步、阻塞非阻塞、并发并行 - mhq_martin - 博客园 (cnblogs.com)</a></li>
-<li><a href="http://www.ruanyifeng.com/blog/2014/10/event-loop.html">JavaScript 运行机制详解：再谈Event Loop</a></li>
-</ol>
-]]></content>
-      <categories>
-        <category>操作系统</category>
-      </categories>
-      <tags>
-        <tag>JavaScript</tag>
-        <tag>同步</tag>
-        <tag>异步</tag>
-        <tag>阻塞</tag>
-        <tag>非阻塞</tag>
-        <tag>进程</tag>
-        <tag>线程</tag>
-        <tag>even loop</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>线程/协程详解</title>
     <url>/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3/</url>
     <content><![CDATA[<p>之前一篇文章简单介绍了进程和线程，这篇文章我们将介绍一下轻量级进程、线程和协程</p>
 <span id="more"></span>
+
+<blockquote>
+<p>修改记录</p>
+<ul>
+<li>2021-5-26 修改并完善 内核态和用户态切换方式的描述 #<a href="#%E5%A6%82%E4%BD%95%E5%88%87%E6%8D%A2">如何切换</a></li>
+</ul>
+</blockquote>
 <p>在说这写概念之前，我们需要了解一下什么是<code>内核态</code>和<code>用户态</code></p>
 <h1 id="内核态-用户态"><a href="#内核态-用户态" class="headerlink" title="内核态/用户态"></a>内核态/用户态</h1><p>由于需要限制不同的程序之间的访问能力, 防止他们获取别的程序的内存数据, 或者获取外围设备的数据, 并发送到网络, CPU划分出两个权限等级 :<strong>用户态</strong> 和 <strong>内核态</strong></p>
 <ul>
@@ -459,22 +368,18 @@ req.onerror = function ()&#123;&#125;;
 <p>这种机制叫<strong>系统调用</strong>, 在CPU中的实现称之为<strong>陷阱指令(Trap Instruction)</strong></p>
 <p>他们的工作流程如下:</p>
 <ol>
-<li>用户态程序将一些数据值放在寄存器中, 或者使用参数创建一个堆栈(stack frame), 以此表明需要操作系统提供的服务.</li>
-<li>用户态程序执行陷阱指令</li>
-<li>CPU切换到内核态, 并跳到位于内存指定位置的指令, 这些指令是操作系统的一部分, 他们具有内存保护, 不可被用户态程序访问</li>
-<li>这些指令称之为陷阱(trap)或者系统调用处理器(system call handler). 他们会读取程序放入内存的数据参数, 并执行程序请求的服务</li>
+<li>用户态程序将一些<strong>必要参数放在寄存器</strong>中，使操作系统知晓是哪种系统调用。</li>
+<li>用户态程序执行<strong>陷入指令</strong>（非特权指令），引发<strong>内中断</strong>。</li>
+<li>CPU切换到内核态, 并判断中断信号的原因（由于执行trap指令），执行相应的特权指令, 这些特权指令是操作系统的一部分, 他们具有内存保护, 不可被用户态程序访问。</li>
 <li>系统调用完成后, 操作系统会重置CPU为用户态并返回系统调用的结果</li>
 </ol>
-<p><img src="/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8.png" alt="系统调用.png"><br>内核程序执行在内核态（Kernal Mode），用户程序执行在用户态（User Mode）。当发生系统调用时，用户态的程序发起系统调用。因为<strong>系统调用中牵扯特权指令，用户态程序权限不足，因此会中断执行，也就是 Trap（Trap 是一种中断）</strong>。发生中断后，<strong>当前 CPU 执行的程序会中断，跳转到中断处理程序。内核程序开始执行，也就是开始处理系统调用。内核处理完成后，主动触发 Trap，这样会再次发生中断，切换回用户态工作。</strong></p>
+<p><img src="/2021/05/20/%E7%BA%BF%E7%A8%8B-%E5%8D%8F%E7%A8%8B%E8%AF%A6%E8%A7%A3/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8.png" alt="系统调用.png"><br>内核程序执行在内核态（Kernal Mode），用户程序执行在用户态（User Mode）。当发生系统调用时，用户态的程序发起系统调用。因为<strong>系统调用中牵扯特权指令，用户态程序权限不足，因此会中断执行，也就是 Trap（Trap 是一种中断)<strong>。发生中断后，</strong>当前 CPU 执行的程序会中断，跳转到中断处理程序。内核程序开始执行，也就是开始处理系统调用。内核处理完成后，主动触发 Trap，这样会再次发生中断，切换回用户态工作。</strong></p>
 <h3 id="切换方式"><a href="#切换方式" class="headerlink" title="切换方式"></a>切换方式</h3><ul>
-<li><p>系统调用<br>这是用户态进程主动要求切换到内核态的一种方式，用户态进程通过系统调用申请使用操作系统提供的服务程序完成工作。而系统调用的机制其核心还是使用了操作系统为用户特别开放的<strong>一个中断来实现</strong>，例如Linux的int 80h中断。</p>
+<li><p><strong>用户态转切换到内核态</strong>：主要是用过<strong>系统调用</strong>（陷入指令），可以认为是用户进程主动发起的。</p>
 </li>
-<li><p>异常<br>当CPU在执行运行在用户态下的程序时，发生了某些事先不可知的异常，这时会触发由当前运行进程切换到处理此异常的内核相关程序中，也就转到了内核态，比如缺页异常。</p>
-</li>
-<li><p>外围设备的中断<br>当外围设备完成用户请求的操作后，会向CPU发出相应的中断信号，这时CPU会暂停执行下一条即将要执行的指令转而去执行与中断信号对应的处理程序，如果先前执行的指令是用户态下的程序，那么这个转换的过程自然也就发生了由用户态到内核态的切换。比如硬盘读写操作完成，系统会切换到硬盘读写的中断处理程序中执行后续操作等。</p>
+<li><p><strong>系统从内核态切换到用户态</strong>：执行一条<strong>特权指令</strong>——修改PSW（程序状态字寄存器）的标志位为“用户态”，意味着操作系统将主动让出CPU的使用权</p>
 </li>
 </ul>
-<p>这3种方式是系统在运行时由用户态转到内核态的最主要方式，其中系统调用可以认为是用户进程主动发起的，异常和外围设备中断则是被动的。</p>
 <h1 id="线程-协程"><a href="#线程-协程" class="headerlink" title="线程/协程"></a>线程/协程</h1><h2 id="线程"><a href="#线程" class="headerlink" title="线程"></a>线程</h2><h3 id="调度器"><a href="#调度器" class="headerlink" title="调度器"></a>调度器</h3><blockquote>
 <p>内核通过操纵调度器（Thread Scheduler）对内核线程进行调度，并负责将线程的任务映射到各个处理器上</p>
 </blockquote>
@@ -493,7 +398,7 @@ req.onerror = function ()&#123;&#125;;
 <li><strong>无法利用多核优势</strong>(N:1模型中)：比如操作系统调度的仍然是这个线程所属的进程，所以无论每次一个进程有多少用户态的线程，都只能并发执行一个线程，因此一个进程的多个线程无法利用多核的优势。</li>
 <li><strong>操作系统无法针对线程调度进行优化</strong>：当一个进程的一个用户态线程阻塞（Block）了，操作系统无法及时发现和处理阻塞问题，它不会更换执行其他线程，从而造成资源浪费。</li>
 </ul>
-<h3 id="内核态线程"><a href="#内核态线程" class="headerlink" title="内核态线程"></a>内核态线程</h3><p>内核态线程也称作内核级线程（Kernel Level Thread）。这种线程执行在内核态，可以通过系统调用创造一个内核级线程。</p>
+<h3 id="内核态线程"><a href="#内核态线程" class="headerlink" title="内核态线程"></a>内核态线程</h3><p>内核态线程也称作内核级线程（Kernel Level Thread）。这种线程执行在内核态，可以通过系统调用创造一个内核级线程。<strong>内核态线程是处理机分配的基本单位</strong>。</p>
 <p>内核级线程有很多<strong>优势</strong>：</p>
 <ul>
 <li><strong>可以利用多核 CPU 优势</strong>：内核拥有较高权限，因此可以在多个 CPU 核心上执行内核线程。</li>
@@ -579,18 +484,129 @@ req.onerror = function ()&#123;&#125;;
 </blockquote>
 </li>
 </ol>
-<h1 id="参考地址"><a href="#参考地址" class="headerlink" title="参考地址"></a>参考地址</h1><p><a href="https://www.cnblogs.com/shangxiaofei/p/5567776.html">多线程之：用户态和内核态的区别</a><br><a href="https://blog.csdn.net/gatieme/article/details/51481863">内核线程、轻量级进程、用户线程三种线程概念解惑（线程≠轻量级进程）</a><br><a href="https://blog.csdn.net/m0_50654102/article/details/116065035">用户态线程和内核态线程有什么区别？</a><br><a href="https://www.jianshu.com/p/4afa0679851d">【深度知识】GO语言的goroutine并发原理和调度机制</a><br><a href="https://www.limerence2017.com/2019/11/05/golang17/">图解Go协程调度原理，小白都能理解</a><br><a href="https://www.icode9.com/content-3-198795.html">Linux内核v2.6中的pthread与kthread</a><br><a href="https://blog.csdn.net/wwxy1995/article/details/109334092">操作系统基础知识用户态和内核态的区别</a></p>
+<h1 id="参考地址"><a href="#参考地址" class="headerlink" title="参考地址"></a>参考地址</h1><ol>
+<li><a href="https://www.cnblogs.com/shangxiaofei/p/5567776.html">多线程之：用户态和内核态的区别</a></li>
+<li><a href="https://blog.csdn.net/gatieme/article/details/51481863">内核线程、轻量级进程、用户线程三种线程概念解惑（线程≠轻量级进程）</a></li>
+<li><a href="https://blog.csdn.net/m0_50654102/article/details/116065035">用户态线程和内核态线程有什么区别？</a></li>
+<li><a href="https://www.jianshu.com/p/4afa0679851d">【深度知识】GO语言的goroutine并发原理和调度机制</a></li>
+<li><a href="https://www.limerence2017.com/2019/11/05/golang17/">图解Go协程调度原理，小白都能理解</a></li>
+<li><a href="https://www.icode9.com/content-3-198795.html">Linux内核v2.6中的pthread与kthread</a></li>
+<li><a href="https://blog.csdn.net/wwxy1995/article/details/109334092">操作系统基础知识用户态和内核态的区别</a></li>
+</ol>
 ]]></content>
       <categories>
         <category>操作系统</category>
       </categories>
       <tags>
         <tag>goroutine</tag>
-        <tag>进程</tag>
-        <tag>线程</tag>
         <tag>用户态</tag>
         <tag>内核态</tag>
+        <tag>线程</tag>
         <tag>协程</tag>
+        <tag>进程</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>进程/线程、同步/异步、阻塞/非阻塞</title>
+    <url>/2021/05/19/%E8%BF%9B%E7%A8%8B-%E7%BA%BF%E7%A8%8B%E3%80%81%E5%90%8C%E6%AD%A5-%E5%BC%82%E6%AD%A5%E3%80%81%E9%98%BB%E5%A1%9E-%E9%9D%9E%E9%98%BB%E5%A1%9E/</url>
+    <content><![CDATA[<p>这篇文章我们将重点讨论 <strong>进程/线程、同步/异步、阻塞/非阻塞</strong>问题</p>
+<span id="more"></span>
+
+<blockquote>
+<p>修改记录</p>
+<ul>
+<li>2021-5-26 修改进程和线程的相关概念 <a href="#%E8%BF%9B%E7%A8%8B%E3%80%81%E7%BA%BF%E7%A8%8B">进程、线程</a></li>
+</ul>
+</blockquote>
+<h1 id="进程、线程"><a href="#进程、线程" class="headerlink" title="进程、线程"></a>进程、线程</h1><p>在没有线程之前，进程是资源分配和调度的基本单位</p>
+<p>在有线程之后,<strong>进程是资源分配的基本单位，线程是处理机调度的基本单位</strong></p>
+<p><img src="/2021/05/19/%E8%BF%9B%E7%A8%8B-%E7%BA%BF%E7%A8%8B%E3%80%81%E5%90%8C%E6%AD%A5-%E5%BC%82%E6%AD%A5%E3%80%81%E9%98%BB%E5%A1%9E-%E9%9D%9E%E9%98%BB%E5%A1%9E/%E8%BF%9B%E7%A8%8B%E7%8A%B6%E6%80%81%E6%A8%A1%E5%9E%8B.png" alt="进程状态模型"></p>
+<h2 id="进程"><a href="#进程" class="headerlink" title="进程"></a>进程</h2><p>Windows系统中的一个基本概念，它包含着一个运行程序所需要的资源，<strong>进程可以包括一个或多个线程</strong>。</p>
+<h2 id="线程"><a href="#线程" class="headerlink" title="线程"></a>线程</h2><p><strong>进程中的基本执行单元，是操作系统分配CPU时间的基本单位，一个进程可以包含若干个线程，在进程入口执行的第一个线程被视为这个进程的主线程。</strong></p>
+<p>线程主要是由CPU寄存器、调用栈和线程本地存储器（Thread Local Storage，TLS）组成的。</p>
+<ul>
+<li><strong>CPU寄存器</strong>主要记录当前所执行线程的状态</li>
+<li><strong>调用栈</strong>主要用于维护线程所调用到的内存与数据</li>
+<li><strong>TLS</strong>主要用于存放线程的状态信息。</li>
+</ul>
+<h2 id="进程和线程的区别"><a href="#进程和线程的区别" class="headerlink" title="进程和线程的区别"></a>进程和线程的区别</h2><p><strong>进程和线程的主要差别在于它们是不同的操作系统资源管理方式</strong>。进程有独立的地址空间，一个进程崩溃后，在保护模式下不会对其它进程产生影响，而线程只是一个进程中的不同执行路径。<strong>线程有自己的堆栈和局部变量，但线程之间没有单独的地址空间</strong>，一个线程死掉就等于整个进程死掉，所以多进程的程序要比多线程的程序健壮，但在进程切换时，耗费资源较大，效率要差一些。但对于一些要求同时进行并且又要共享某些变量的并发操作，只能用线程，不能用进程。</p>
+<ol>
+<li><p>简而言之,一个程序至少有一个进程,一个进程至少有一个线程.</p>
+</li>
+<li><p>线程的划分尺度小于进程，使得多线程程序的并发性高。</p>
+</li>
+<li><p>另外，<strong>进程在执行过程中拥有独立的内存单元</strong>，而<strong>多个线程共享内存</strong>，从而极大地提高了程序的运行效率。</p>
+</li>
+<li><p>线程在执行过程中与进程还是有区别的。每个独立的线程有一个程序运行的入口、顺序执行序列和程序的出口。但是线程不能够独立执行，必须依存在应用程序中，由应用程序提供多个线程执行控制。</p>
+</li>
+<li><p>从逻辑角度来看，<strong>多线程的意义在于一个应用程序中，有多个执行部分可以同时执行</strong>。但<strong>操作系统并没有将多个线程看做多个独立的应用来实现进程的调度和管理以及资源分配</strong>。这就是进程和线程的重要区别。</p>
+</li>
+</ol>
+<h1 id="同步（Sync）和异步（Async）"><a href="#同步（Sync）和异步（Async）" class="headerlink" title="同步（Sync）和异步（Async）"></a>同步（Sync）和异步（Async）</h1><h2 id="同步"><a href="#同步" class="headerlink" title="同步"></a>同步</h2><p>所谓同步，就是发出一个功能调用时，在没有得到结果之前，该调用就不返回或继续执行后续操作。</p>
+<h2 id="异步"><a href="#异步" class="headerlink" title="异步"></a>异步</h2><p>异步与同步相对，当一个异步过程调用发出后，<strong>调用者在没有得到结果之前，就可以继续执行后续操作</strong>。当这个调用完成后，<strong>一般通过状态、通知和回调来通知调用者</strong>。对于异步调用，调用的返回并不受调用者控制。</p>
+<p>对于通知调用者的三种方式，具体如下：</p>
+<ul>
+<li><p>状态</p>
+<p>即<strong>监听被调用者的状态（轮询）</strong>，调用者需要每隔一定时间检查一次，效率会很低。</p>
+</li>
+<li><p>通知</p>
+<p>当被调用者执行完成后，<strong>发出通知告知调用者</strong>，无需消耗太多性能。</p>
+</li>
+<li><p>回调</p>
+<p>与通知类似，当被调用者执行完成后，会<strong>调用调用者提供的回调函数</strong>。</p>
+</li>
+</ul>
+<h2 id="JavaScript中的异步"><a href="#JavaScript中的异步" class="headerlink" title="JavaScript中的异步"></a>JavaScript中的异步</h2><p>众所周知，js语言的一大特点就是单线程，那么它的异步是怎么实现的呢？</p>
+<h3 id="任务队列"><a href="#任务队列" class="headerlink" title="任务队列"></a>任务队列</h3><p>js中IO设备（输入输出设备）很慢(如Ajax操作从网络读取数据)，不得不等着结果出来，再往下执行。<br>JavaScript语言的设计者意识到，这时主线程完全可以不管IO设备，<strong>挂起处于等待中的任务，先运行排在后面的任务</strong>。等到IO设备返回了结果，再回过头，把挂起的任务继续执行下去。<br>于是，所有任务可以分成两种，</p>
+<ul>
+<li>一种是<strong>同步任务（synchronous）</strong><br>同步任务指的是，在主线程上排队执行的任务，只有前一个任务执行完毕，才能执行后一个任务</li>
+<li>另一种是<strong>异步任务（asynchronous）</strong><br>异步任务指的是，不进入主线程，而进入”任务队列”（task queue）的任务，只有”任务队列”通知主线程，某个异步任务可以执行了，该任务才会进入主线程执行。</li>
+</ul>
+<p>具体来说，异步执行的运行机制如下。（同步执行也是如此，因为它可以被视为没有异步任务的异步执行。）</p>
+<ol>
+<li>所有同步任务都在主线程上执行，形成一个<strong>执行栈（execution context stack）</strong>。</li>
+<li>主线程之外，还存在一个”<strong>任务队列”（task queue）</strong>。只要异步任务有了运行结果，就在”任务队列”之中放置一个事件。</li>
+<li>一旦”<strong>执行栈</strong>“中的所有同步任务执行完毕，系统就会读取”任务队列”，看看里面有哪些事件。那些对应的异步任务，于是结束等待状态，进入执行栈，开始执行。</li>
+<li>主线程不断重复上面的第三步。</li>
+</ol>
+<p><img src="/2021/05/19/%E8%BF%9B%E7%A8%8B-%E7%BA%BF%E7%A8%8B%E3%80%81%E5%90%8C%E6%AD%A5-%E5%BC%82%E6%AD%A5%E3%80%81%E9%98%BB%E5%A1%9E-%E9%9D%9E%E9%98%BB%E5%A1%9E/%E5%BC%82%E6%AD%A5%E6%89%A7%E8%A1%8C%E8%BF%87%E7%A8%8B.jpg" alt="异步执行过程.jpg"><br>只要主线程空了，就会去读取”任务队列”，这就是js的运行机制。这个过程会不断重复。</p>
+<h3 id="事件和回调函数"><a href="#事件和回调函数" class="headerlink" title="事件和回调函数"></a>事件和回调函数</h3><h4 id="事件"><a href="#事件" class="headerlink" title="事件"></a>事件</h4><p>一个事件的队列（也可以理解成消息的队列），IO设备完成一项任务，就在”任务队列”中添加一个事件，表示相关的异步任务可以进入”执行栈”了。主线程读取”任务队列”，就是读取里面有哪些事件。</p>
+<p>“任务队列”中的事件，除了IO设备的事件以外，还包括一些用户产生的事件（比如鼠标点击、页面滚动等等）。只要指定过回调函数，这些事件发生时就会进入”任务队列”，等待主线程读取。</p>
+<h4 id="回调函数（callback）"><a href="#回调函数（callback）" class="headerlink" title="回调函数（callback）"></a>回调函数（callback）</h4><p>那些会被主线程挂起来的代码。异步任务必须指定回调函数，当<strong>主线程开始执行异步任务，就是执行对应的回调函数</strong>。</p>
+<h3 id="Event-Loop"><a href="#Event-Loop" class="headerlink" title="Event Loop"></a>Event Loop</h3><p>主线程从”任务队列”中读取事件，这个过程是循环不断的，所以整个的这种运行机制又称为Event Loop（事件循环）。</p>
+<p><img src="/2021/05/19/%E8%BF%9B%E7%A8%8B-%E7%BA%BF%E7%A8%8B%E3%80%81%E5%90%8C%E6%AD%A5-%E5%BC%82%E6%AD%A5%E3%80%81%E9%98%BB%E5%A1%9E-%E9%9D%9E%E9%98%BB%E5%A1%9E/evenloop.png" alt="evenloop"></p>
+<p>上图中，主线程运行的时候，产生堆（heap）和栈（stack），栈中的代码调用各种<strong>外部API</strong>，它们<strong>在”任务队列”中加入各种事件</strong>（click，load，done）。只要栈中的代码执行完毕，主线程就会去<strong>读取”任务队列”<strong>，</strong>依次执行那些事件所对应的回调函数</strong>。</p>
+<p>执行栈中的代码（同步任务），总是在读取”任务队列”（异步任务）之前执行。请看下面这个例子。</p>
+<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="keyword">var</span> req = <span class="keyword">new</span> XMLHttpRequest();</span><br><span class="line">req.open(<span class="string">&#x27;GET&#x27;</span>, url);    </span><br><span class="line">req.onload = <span class="function"><span class="keyword">function</span> (<span class="params"></span>)</span>&#123;&#125;;    </span><br><span class="line">req.onerror = <span class="function"><span class="keyword">function</span> (<span class="params"></span>)</span>&#123;&#125;;    </span><br><span class="line">req.send();</span><br></pre></td></tr></table></figure>
+
+<p>上面代码中的<code>req.send</code>方法是Ajax操作向服务器发送数据，它是一个异步任务，意味着只有当前脚本的所有代码执行完，系统才会去读取”任务队列”。所以，它与下面的写法等价。</p>
+<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="keyword">var</span> req = <span class="keyword">new</span> XMLHttpRequest();</span><br><span class="line">req.open(<span class="string">&#x27;GET&#x27;</span>, url);    </span><br><span class="line">req.send();</span><br><span class="line">req.onload = <span class="function"><span class="keyword">function</span> (<span class="params"></span>)</span>&#123;&#125;;    </span><br><span class="line">req.onerror = <span class="function"><span class="keyword">function</span> (<span class="params"></span>)</span>&#123;&#125;;    </span><br></pre></td></tr></table></figure>
+
+<p>也就是说，指定回调函数的部分（onload和onerror），在send()方法的前面或后面无关紧要，因为它们属于执行栈的一部分，系统总是执行完它们，才会去读取”任务队列”。</p>
+<h2 id="同步和异步的区别"><a href="#同步和异步的区别" class="headerlink" title="同步和异步的区别"></a>同步和异步的区别</h2><p>请求发出后，是否需要等待结果，才能继续执行其他操作。</p>
+<h1 id="阻塞和非阻塞"><a href="#阻塞和非阻塞" class="headerlink" title="阻塞和非阻塞"></a>阻塞和非阻塞</h1><p>阻塞和非阻塞这两个概念与<strong>程序（线程）等待消息通知(无所谓同步或者异步)时的状态有关</strong>。</p>
+<p>阻塞和非阻塞关注的是<strong>程序在等待调用结果（消息，返回值）时的状态.</strong></p>
+<p>阻塞调用是指调用结果返回之前，<strong>当前线程会被挂起</strong>。调用线程只有在得到结果之后才会返回。</p>
+<p>非阻塞调用指在不能立刻得到结果之前，<strong>直接返回结果</strong>，使该调用不会阻塞当前线程。</p>
+<p><strong>同步/异步 关注的是消息通知的机制</strong></p>
+<p><strong>阻塞/非阻塞 关注的是程序（线程）等待消息通知时的状态。</strong></p>
+<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><ol>
+<li><a href="https://www.cnblogs.com/mhq-martin/p/9035640.html">15分钟读懂进程线程、同步异步、阻塞非阻塞、并发并行 - mhq_martin - 博客园 (cnblogs.com)</a></li>
+<li><a href="http://www.ruanyifeng.com/blog/2014/10/event-loop.html">JavaScript 运行机制详解：再谈Event Loop</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>操作系统</category>
+      </categories>
+      <tags>
+        <tag>线程</tag>
+        <tag>进程</tag>
+        <tag>JavaScript</tag>
+        <tag>同步</tag>
+        <tag>异步</tag>
+        <tag>阻塞</tag>
+        <tag>非阻塞</tag>
+        <tag>even loop</tag>
       </tags>
   </entry>
 </search>

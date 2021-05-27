@@ -27,21 +27,22 @@
 <meta property="og:site_name" content="like随笔">
 <meta property="og:description" content="这篇文章我们将重点讨论 进程&#x2F;线程、同步&#x2F;异步、阻塞&#x2F;非阻塞问题">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.likeyl.cn/2021/05/19/%E8%BF%9B%E7%A8%8B-%E7%BA%BF%E7%A8%8B%E3%80%81%E5%90%8C%E6%AD%A5-%E5%BC%82%E6%AD%A5%E3%80%81%E9%98%BB%E5%A1%9E-%E9%9D%9E%E9%98%BB%E5%A1%9E/%E8%BF%9B%E7%A8%8B%E7%8A%B6%E6%80%81%E6%A8%A1%E5%9E%8B.png">
 <meta property="og:image" content="https://www.likeyl.cn/2021/05/19/%E8%BF%9B%E7%A8%8B-%E7%BA%BF%E7%A8%8B%E3%80%81%E5%90%8C%E6%AD%A5-%E5%BC%82%E6%AD%A5%E3%80%81%E9%98%BB%E5%A1%9E-%E9%9D%9E%E9%98%BB%E5%A1%9E/%E5%BC%82%E6%AD%A5%E6%89%A7%E8%A1%8C%E8%BF%87%E7%A8%8B.jpg">
 <meta property="og:image" content="https://www.likeyl.cn/2021/05/19/%E8%BF%9B%E7%A8%8B-%E7%BA%BF%E7%A8%8B%E3%80%81%E5%90%8C%E6%AD%A5-%E5%BC%82%E6%AD%A5%E3%80%81%E9%98%BB%E5%A1%9E-%E9%9D%9E%E9%98%BB%E5%A1%9E/evenloop.png">
 <meta property="article:published_time" content="2021-05-19T10:42:28.000Z">
-<meta property="article:modified_time" content="2021-05-21T02:29:14.587Z">
+<meta property="article:modified_time" content="2021-05-26T10:56:40.751Z">
 <meta property="article:author" content="来自派大星的愤怒">
+<meta property="article:tag" content="线程">
+<meta property="article:tag" content="进程">
 <meta property="article:tag" content="JavaScript">
 <meta property="article:tag" content="同步">
 <meta property="article:tag" content="异步">
 <meta property="article:tag" content="阻塞">
 <meta property="article:tag" content="非阻塞">
-<meta property="article:tag" content="进程">
-<meta property="article:tag" content="线程">
 <meta property="article:tag" content="even loop">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://www.likeyl.cn/2021/05/19/%E8%BF%9B%E7%A8%8B-%E7%BA%BF%E7%A8%8B%E3%80%81%E5%90%8C%E6%AD%A5-%E5%BC%82%E6%AD%A5%E3%80%81%E9%98%BB%E5%A1%9E-%E9%9D%9E%E9%98%BB%E5%A1%9E/%E5%BC%82%E6%AD%A5%E6%89%A7%E8%A1%8C%E8%BF%87%E7%A8%8B.jpg">
+<meta name="twitter:image" content="https://www.likeyl.cn/2021/05/19/%E8%BF%9B%E7%A8%8B-%E7%BA%BF%E7%A8%8B%E3%80%81%E5%90%8C%E6%AD%A5-%E5%BC%82%E6%AD%A5%E3%80%81%E9%98%BB%E5%A1%9E-%E9%9D%9E%E9%98%BB%E5%A1%9E/%E8%BF%9B%E7%A8%8B%E7%8A%B6%E6%80%81%E6%A8%A1%E5%9E%8B.png">
 
 <link rel="canonical" href="https://www.likeyl.cn/2021/05/19/%E8%BF%9B%E7%A8%8B-%E7%BA%BF%E7%A8%8B%E3%80%81%E5%90%8C%E6%AD%A5-%E5%BC%82%E6%AD%A5%E3%80%81%E9%98%BB%E5%A1%9E-%E9%9D%9E%E9%98%BB%E5%A1%9E/">
 
@@ -230,7 +231,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-05-21 10:29:14" itemprop="dateModified" datetime="2021-05-21T10:29:14+08:00">2021-05-21</time>
+                <time title="修改时间：2021-05-26 18:56:40" itemprop="dateModified" datetime="2021-05-26T18:56:40+08:00">2021-05-26</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -284,7 +285,16 @@
         <p>这篇文章我们将重点讨论 <strong>进程/线程、同步/异步、阻塞/非阻塞</strong>问题</p>
 <span id="more"></span>
 
-<h1 id="进程、线程"><a href="#进程、线程" class="headerlink" title="进程、线程"></a>进程、线程</h1><h2 id="进程"><a href="#进程" class="headerlink" title="进程"></a>进程</h2><p>Windows系统中的一个基本概念，它包含着一个运行程序所需要的资源，<strong>进程可以包括一个或多个线程</strong>。</p>
+<blockquote>
+<p>修改记录</p>
+<ul>
+<li>2021-5-26 修改进程和线程的相关概念 <a href="#%E8%BF%9B%E7%A8%8B%E3%80%81%E7%BA%BF%E7%A8%8B">进程、线程</a></li>
+</ul>
+</blockquote>
+<h1 id="进程、线程"><a href="#进程、线程" class="headerlink" title="进程、线程"></a>进程、线程</h1><p>在没有线程之前，进程是资源分配和调度的基本单位</p>
+<p>在有线程之后,<strong>进程是资源分配的基本单位，线程是处理机调度的基本单位</strong></p>
+<p><img src="/2021/05/19/%E8%BF%9B%E7%A8%8B-%E7%BA%BF%E7%A8%8B%E3%80%81%E5%90%8C%E6%AD%A5-%E5%BC%82%E6%AD%A5%E3%80%81%E9%98%BB%E5%A1%9E-%E9%9D%9E%E9%98%BB%E5%A1%9E/%E8%BF%9B%E7%A8%8B%E7%8A%B6%E6%80%81%E6%A8%A1%E5%9E%8B.png" alt="进程状态模型"></p>
+<h2 id="进程"><a href="#进程" class="headerlink" title="进程"></a>进程</h2><p>Windows系统中的一个基本概念，它包含着一个运行程序所需要的资源，<strong>进程可以包括一个或多个线程</strong>。</p>
 <h2 id="线程"><a href="#线程" class="headerlink" title="线程"></a>线程</h2><p><strong>进程中的基本执行单元，是操作系统分配CPU时间的基本单位，一个进程可以包含若干个线程，在进程入口执行的第一个线程被视为这个进程的主线程。</strong></p>
 <p>线程主要是由CPU寄存器、调用栈和线程本地存储器（Thread Local Storage，TLS）组成的。</p>
 <ul>
@@ -302,7 +312,7 @@
 </li>
 <li><p>线程在执行过程中与进程还是有区别的。每个独立的线程有一个程序运行的入口、顺序执行序列和程序的出口。但是线程不能够独立执行，必须依存在应用程序中，由应用程序提供多个线程执行控制。</p>
 </li>
-<li><p>从逻辑角度来看，<strong>多线程的意义在于一个应用程序中，有多个执行部分可以同时执行</strong>。但操作系统并没有将多个线程看做多个独立的应用，来实现进程的调度和管理以及资源分配。这就是进程和线程的重要区别。</p>
+<li><p>从逻辑角度来看，<strong>多线程的意义在于一个应用程序中，有多个执行部分可以同时执行</strong>。但<strong>操作系统并没有将多个线程看做多个独立的应用来实现进程的调度和管理以及资源分配</strong>。这就是进程和线程的重要区别。</p>
 </li>
 </ol>
 <h1 id="同步（Sync）和异步（Async）"><a href="#同步（Sync）和异步（Async）" class="headerlink" title="同步（Sync）和异步（Async）"></a>同步（Sync）和异步（Async）</h1><h2 id="同步"><a href="#同步" class="headerlink" title="同步"></a>同步</h2><p>所谓同步，就是发出一个功能调用时，在没有得到结果之前，该调用就不返回或继续执行后续操作。</p>
@@ -343,12 +353,8 @@
 <figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> req = <span class="keyword">new</span> XMLHttpRequest();</span><br><span class="line">req.open(<span class="string">&#x27;GET&#x27;</span>, url);    </span><br><span class="line">req.onload = <span class="function"><span class="keyword">function</span> (<span class="params"></span>)</span>&#123;&#125;;    </span><br><span class="line">req.onerror = <span class="function"><span class="keyword">function</span> (<span class="params"></span>)</span>&#123;&#125;;    </span><br><span class="line">req.send();</span><br></pre></td></tr></table></figure>
 
 <p>上面代码中的<code>req.send</code>方法是Ajax操作向服务器发送数据，它是一个异步任务，意味着只有当前脚本的所有代码执行完，系统才会去读取”任务队列”。所以，它与下面的写法等价。</p>
-<pre><code class="js">var req = new XMLHttpRequest();
-req.open(&#39;GET&#39;, url);    
-req.send();
-req.onload = function ()&#123;&#125;;    
-req.onerror = function ()&#123;&#125;;    
-</code></pre>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> req = <span class="keyword">new</span> XMLHttpRequest();</span><br><span class="line">req.open(<span class="string">&#x27;GET&#x27;</span>, url);    </span><br><span class="line">req.send();</span><br><span class="line">req.onload = <span class="function"><span class="keyword">function</span> (<span class="params"></span>)</span>&#123;&#125;;    </span><br><span class="line">req.onerror = <span class="function"><span class="keyword">function</span> (<span class="params"></span>)</span>&#123;&#125;;    </span><br></pre></td></tr></table></figure>
+
 <p>也就是说，指定回调函数的部分（onload和onerror），在send()方法的前面或后面无关紧要，因为它们属于执行栈的一部分，系统总是执行完它们，才会去读取”任务队列”。</p>
 <h2 id="同步和异步的区别"><a href="#同步和异步的区别" class="headerlink" title="同步和异步的区别"></a>同步和异步的区别</h2><p>请求发出后，是否需要等待结果，才能继续执行其他操作。</p>
 <h1 id="阻塞和非阻塞"><a href="#阻塞和非阻塞" class="headerlink" title="阻塞和非阻塞"></a>阻塞和非阻塞</h1><p>阻塞和非阻塞这两个概念与<strong>程序（线程）等待消息通知(无所谓同步或者异步)时的状态有关</strong>。</p>
@@ -415,13 +421,13 @@ req.onerror = function ()&#123;&#125;;
 
       <footer class="post-footer">
           <div class="post-tags">
+              <a href="/tags/%E7%BA%BF%E7%A8%8B/" rel="tag"><i class="fa fa-tag"></i> 线程</a>
+              <a href="/tags/%E8%BF%9B%E7%A8%8B/" rel="tag"><i class="fa fa-tag"></i> 进程</a>
               <a href="/tags/JavaScript/" rel="tag"><i class="fa fa-tag"></i> JavaScript</a>
               <a href="/tags/%E5%90%8C%E6%AD%A5/" rel="tag"><i class="fa fa-tag"></i> 同步</a>
               <a href="/tags/%E5%BC%82%E6%AD%A5/" rel="tag"><i class="fa fa-tag"></i> 异步</a>
               <a href="/tags/%E9%98%BB%E5%A1%9E/" rel="tag"><i class="fa fa-tag"></i> 阻塞</a>
               <a href="/tags/%E9%9D%9E%E9%98%BB%E5%A1%9E/" rel="tag"><i class="fa fa-tag"></i> 非阻塞</a>
-              <a href="/tags/%E8%BF%9B%E7%A8%8B/" rel="tag"><i class="fa fa-tag"></i> 进程</a>
-              <a href="/tags/%E7%BA%BF%E7%A8%8B/" rel="tag"><i class="fa fa-tag"></i> 线程</a>
               <a href="/tags/even-loop/" rel="tag"><i class="fa fa-tag"></i> even loop</a>
           </div>
 
