@@ -102,6 +102,27 @@
 
   
   <url>
+    <loc>https://www.likeyl.cn/tags/CI-CD/</loc>
+    <lastmod>2021-06-16</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.likeyl.cn/tags/docker/</loc>
+    <lastmod>2021-06-16</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.likeyl.cn/tags/jenkins/</loc>
+    <lastmod>2021-06-16</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
     <loc>https://www.likeyl.cn/tags/I-O/</loc>
     <lastmod>2021-06-16</lastmod>
     <changefreq>daily</changefreq>
@@ -124,27 +145,6 @@
   
   <url>
     <loc>https://www.likeyl.cn/tags/go%E5%B9%B6%E5%8F%91%E6%A8%A1%E5%9E%8B/</loc>
-    <lastmod>2021-06-16</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.likeyl.cn/tags/CI-CD/</loc>
-    <lastmod>2021-06-16</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.likeyl.cn/tags/docker/</loc>
-    <lastmod>2021-06-16</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.likeyl.cn/tags/jenkins/</loc>
     <lastmod>2021-06-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
@@ -272,6 +272,13 @@
 
   
   <url>
+    <loc>https://www.likeyl.cn/categories/%E7%BC%96%E7%A8%8B/</loc>
+    <lastmod>2021-06-16</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
     <loc>https://www.likeyl.cn/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/</loc>
     <lastmod>2021-06-16</lastmod>
     <changefreq>daily</changefreq>
@@ -280,13 +287,6 @@
   
   <url>
     <loc>https://www.likeyl.cn/categories/golang/</loc>
-    <lastmod>2021-06-16</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.likeyl.cn/categories/%E7%BC%96%E7%A8%8B/</loc>
     <lastmod>2021-06-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
